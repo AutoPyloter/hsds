@@ -28,8 +28,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from .space  import DesignSpace
-from .pareto import ParetoArchive, ParetoResult
+from .space   import DesignSpace
+from .pareto  import ParetoArchive, ParetoResult
+from .logging import EvaluationCache, RunLogger, _resolve_path
 
 # ---------------------------------------------------------------------------
 # Type aliases
@@ -302,6 +303,115 @@ class HarmonySearchOptimizer(ABC):
             -math.log(bw_max / bw_min) * iteration / max_iter
         )
 
+    # --- run setup ---------------------------------------------------------
+
+    def _setup_run(
+        self,
+        *,
+        memory_size:      int,
+        mode:             str,
+        checkpoint_path:  Optional[Path],
+        resume:           str,
+        use_cache:        bool,
+        cache_maxsize:    int,
+        log_init:         bool,
+        init_log_path:    Optional[Path],
+        log_evaluations:  bool,
+        eval_log_path:    Optional[Path],
+        log_history:      bool,
+        history_log_path: Optional[Path],
+        history_every:    int,
+    ):
+        """
+        Initialise or resume memory, wrap the objective with cache/logger,
+        and return (start_iter, logger).
+
+        Resume logic (controlled by *resume*):
+
+        ``"auto"``
+            Resume if *checkpoint_path* exists and is non-empty, otherwise
+            start fresh.
+        ``"new"``
+            Always start fresh.  An existing checkpoint file is overwritten.
+        ``"resume"``
+            Always resume.  Raises ``FileNotFoundError`` if the checkpoint
+            file does not exist.
+        """
+        ckpt = Path(checkpoint_path) if checkpoint_path else None
+
+        # --- decide whether to resume ---
+        should_resume = False
+        if resume == "resume":
+            if ckpt is None or not ckpt.exists():
+                raise FileNotFoundError(
+                    f"resume='resume' but checkpoint not found: {ckpt}"
+                )
+            should_resume = True
+        elif resume == "auto":
+            should_resume = (ckpt is not None and ckpt.exists()
+                             and ckpt.stat().st_size > 0)
+        elif resume == "new":
+            should_resume = False
+        else:
+            raise ValueError(
+                f"resume must be 'auto', 'new', or 'resume'; got {resume!r}."
+            )
+
+        # --- initialise or restore memory ---
+        if should_resume:
+            start_iter = self.load_checkpoint(ckpt)
+        else:
+            self._memory = HarmonyMemory(size=memory_size, mode=mode)
+            start_iter = 0
+
+        # --- wrap objective with cache ---
+        effective_obj = self.objective
+        if use_cache:
+            self._cache = EvaluationCache(self.objective, maxsize=cache_maxsize)
+            effective_obj = self._cache
+        else:
+            self._cache = None
+
+        # --- populate memory if starting fresh ---
+        if not should_resume:
+            for _ in range(memory_size):
+                h = self.space.sample_harmony()
+                f, p = effective_obj(h)
+                self._memory.add(h, float(f), float(p))
+
+        # --- resolve log paths ---
+        init_path = _resolve_path(
+            Path(init_log_path) if init_log_path else None, ckpt, "_init"
+        ) if log_init else None
+        eval_path = _resolve_path(
+            Path(eval_log_path) if eval_log_path else None, ckpt, "_evals"
+        ) if log_evaluations else None
+        hist_path = _resolve_path(
+            Path(history_log_path) if history_log_path else None, ckpt, "_history"
+        ) if log_history else None
+
+        logger = RunLogger(
+            variable_names   = self.space.names(),
+            init_log_path    = init_path,
+            eval_log_path    = eval_path,
+            history_log_path = hist_path,
+            history_every    = history_every,
+        )
+
+        # Write init log if starting fresh and logging requested
+        if not should_resume and log_init:
+            logger.log_init(
+                harmonies = self._memory.harmonies,
+                fitnesses = self._memory._fitness,
+                penalties = self._memory._penalty,
+            )
+
+        # Save initial checkpoint immediately
+        if ckpt and not should_resume:
+            self.save_checkpoint(ckpt, 0)
+
+        return start_iter, logger, effective_obj
+
     # --- checkpoint --------------------------------------------------------
 
     def save_checkpoint(self, path: Path, iteration: int) -> None:
@@ -351,13 +461,23 @@ class Minimization(HarmonySearchOptimizer):
         memory_size:      int   = 20,
         hmcr:             float = 0.85,
         par:              float = 0.35,
+        max_iter:         int   = 5000,
         bw_max:           float = 0.05,
         bw_min:           float = 0.001,
-        max_iter:         int   = 5000,
-        callback:         Optional[Callable[[int, OptimizationResult], None]] = None,
+        resume:           str            = "auto",
         checkpoint_path:  Optional[Path] = None,
-        checkpoint_every: int   = 500,
-        verbose:          bool  = False,
+        checkpoint_every: int            = 500,
+        use_cache:        bool           = False,
+        cache_maxsize:    int            = 4096,
+        log_init:         bool           = False,
+        init_log_path:    Optional[Path] = None,
+        log_evaluations:  bool           = False,
+        eval_log_path:    Optional[Path] = None,
+        log_history:      bool           = False,
+        history_log_path: Optional[Path] = None,
+        history_every:    int            = 1,
+        callback:         Optional[Callable[[int, OptimizationResult], None]] = None,
+        verbose:          bool           = False,
     ) -> OptimizationResult:
         """
         Run the minimisation loop.
@@ -372,47 +492,68 @@ class Minimization(HarmonySearchOptimizer):
             Pitch Adjusting Rate ∈ (0, 1).
         max_iter : int
             Total improvisation steps.
-        callback : callable, optional
-            ``callback(iteration, partial_result)``
-            Raise :exc:`StopIteration` inside the callback for early exit.
+        bw_max : float
+            Initial pitch-adjustment bandwidth (fraction of domain width).
+        bw_min : float
+            Final bandwidth.  Decays exponentially from *bw_max* to *bw_min*.
+        resume : str
+            ``"auto"``   — resume if checkpoint exists, else start fresh.
+            ``"new"``    — always start fresh (overwrites existing checkpoint).
+            ``"resume"`` — always resume; raises if checkpoint not found.
         checkpoint_path : Path, optional
-            JSON file for crash recovery.  Resumed automatically on restart.
+            JSON file for crash recovery.
         checkpoint_every : int
-            Checkpoint save frequency (iterations).
+            Save checkpoint every this many iterations.
+        use_cache : bool
+            Cache objective evaluations.
+        cache_maxsize : int
+            Maximum entries in the evaluation cache (LRU).
+        log_init : bool
+            Write the initial harmony memory to a CSV file once at startup.
+        init_log_path : Path, optional
+        log_evaluations : bool
+            Write every evaluated harmony to a CSV file.
+        eval_log_path : Path, optional
+        log_history : bool
+            Write best-so-far at each iteration to a CSV file.
+        history_log_path : Path, optional
+        history_every : int
+        callback : callable, optional
+            Raise :exc:`StopIteration` for early exit.
         verbose : bool
-            Print per-iteration summary to stdout.
         """
-        start_iter = 0
-        if checkpoint_path and Path(checkpoint_path).exists():
-            start_iter = self.load_checkpoint(Path(checkpoint_path))
-            if verbose:
-                print(f"[HS] Resumed from checkpoint at iteration {start_iter}.")
-        else:
-            self._memory = HarmonyMemory(size=memory_size, mode="min")
-            for _ in range(memory_size):
-                h = self.space.sample_harmony()
-                f, p = self.objective(h)
-                self._memory.add(h, float(f), float(p))
+        start_iter, logger, effective_obj = self._setup_run(
+            memory_size=memory_size, mode="min",
+            checkpoint_path=checkpoint_path, resume=resume,
+            use_cache=use_cache, cache_maxsize=cache_maxsize,
+            log_init=log_init, init_log_path=init_log_path,
+            log_evaluations=log_evaluations, eval_log_path=eval_log_path,
+            log_history=log_history, history_log_path=history_log_path,
+            history_every=history_every,
+        )
+        if verbose and start_iter > 0:
+            print(f"[HS] Resumed from checkpoint at iteration {start_iter}.")
 
         history: List[Tuple[Fitness, Penalty]] = []
-        t0 = time.perf_counter()
+        t0   = time.perf_counter()
+        ckpt = Path(checkpoint_path) if checkpoint_path else None
 
         try:
             for it in range(start_iter, max_iter):
-                bw           = self._compute_bw(it - start_iter, max_iter - start_iter, bw_max, bw_min)
-                new_h        = self._improvise(hmcr, par, bw)
-                new_f, new_p = self.objective(new_h)
-                self._memory.try_replace_worst(new_h, float(new_f), float(new_p))
+                bw    = self._compute_bw(it - start_iter, max_iter - start_iter, bw_max, bw_min)
+                new_h = self._improvise(hmcr, par, bw)
+                new_f, new_p = effective_obj(new_h)
+                new_f, new_p = float(new_f), float(new_p)
+                self._memory.try_replace_worst(new_h, new_f, new_p)
 
                 best_h, best_f, best_p = self._memory.best()
                 history.append((best_f, best_p))
+                logger.log_evaluation(it + 1, new_h, new_f, new_p)
+                logger.log_iteration(it + 1, best_h, best_f, best_p)
 
                 if verbose:
-                    print(
-                        f"[HS] iter {it + 1:>6d} | "
-                        f"fitness = {best_f:.6g} | "
-                        f"penalty = {best_p:.4g}"
-                    )
+                    print(f"[HS] iter {it + 1:>6d} | "
+                          f"fitness = {best_f:.6g} | penalty = {best_p:.4g}")
 
                 if callback is not None:
                     partial = OptimizationResult(
@@ -423,8 +564,8 @@ class Minimization(HarmonySearchOptimizer):
                     )
                     callback(it + 1, partial)
 
-                if checkpoint_path and (it + 1) % checkpoint_every == 0:
-                    self.save_checkpoint(Path(checkpoint_path), it + 1)
+                if ckpt and (it + 1) % checkpoint_every == 0:
+                    self.save_checkpoint(ckpt, it + 1)
 
         except StopIteration:
             pass
@@ -436,10 +577,6 @@ class Minimization(HarmonySearchOptimizer):
             iterations=len(history), elapsed_seconds=elapsed, history=history,
         )
 
-
-# ---------------------------------------------------------------------------
-# Maximization
-# ---------------------------------------------------------------------------
 
 class Maximization(HarmonySearchOptimizer):
     """
@@ -461,17 +598,26 @@ class Maximization(HarmonySearchOptimizer):
         memory_size:      int   = 20,
         hmcr:             float = 0.85,
         par:              float = 0.35,
+        max_iter:         int   = 5000,
         bw_max:           float = 0.05,
         bw_min:           float = 0.001,
-        max_iter:         int   = 5000,
-        callback:         Optional[Callable[[int, OptimizationResult], None]] = None,
+        resume:           str            = "auto",
         checkpoint_path:  Optional[Path] = None,
-        checkpoint_every: int   = 500,
-        verbose:          bool  = False,
+        checkpoint_every: int            = 500,
+        use_cache:        bool           = False,
+        cache_maxsize:    int            = 4096,
+        log_init:         bool           = False,
+        init_log_path:    Optional[Path] = None,
+        log_evaluations:  bool           = False,
+        eval_log_path:    Optional[Path] = None,
+        log_history:      bool           = False,
+        history_log_path: Optional[Path] = None,
+        history_every:    int            = 1,
+        callback:         Optional[Callable[[int, OptimizationResult], None]] = None,
+        verbose:          bool           = False,
     ) -> OptimizationResult:
         """Run maximisation (see :meth:`Minimization.optimize` for parameter docs)."""
 
-        # Wrap callback to restore the sign before forwarding
         wrapped_callback = None
         if callback is not None:
             def wrapped_callback(it, partial):
@@ -494,9 +640,15 @@ class Maximization(HarmonySearchOptimizer):
             memory_size=memory_size, hmcr=hmcr, par=par,
             max_iter=max_iter,
             bw_max=bw_max, bw_min=bw_min,
-            callback=wrapped_callback,
+            resume=resume,
             checkpoint_path=checkpoint_path,
             checkpoint_every=checkpoint_every,
+            use_cache=use_cache, cache_maxsize=cache_maxsize,
+            log_init=log_init, init_log_path=init_log_path,
+            log_evaluations=log_evaluations, eval_log_path=eval_log_path,
+            log_history=log_history, history_log_path=history_log_path,
+            history_every=history_every,
+            callback=wrapped_callback,
             verbose=verbose,
         )
         self._memory = inner._memory
@@ -556,14 +708,24 @@ class MultiObjective(HarmonySearchOptimizer):
         memory_size:      int   = 30,
         hmcr:             float = 0.85,
         par:              float = 0.35,
+        max_iter:         int   = 5000,
         bw_max:           float = 0.05,
         bw_min:           float = 0.001,
-        max_iter:         int   = 5000,
         archive_size:     int   = 100,
-        callback:         Optional[Callable[[int, ParetoResult], None]] = None,
+        resume:           str            = "auto",
         checkpoint_path:  Optional[Path] = None,
-        checkpoint_every: int   = 500,
-        verbose:          bool  = False,
+        checkpoint_every: int            = 500,
+        use_cache:        bool           = False,
+        cache_maxsize:    int            = 4096,
+        log_init:         bool           = False,
+        init_log_path:    Optional[Path] = None,
+        log_evaluations:  bool           = False,
+        eval_log_path:    Optional[Path] = None,
+        log_history:      bool           = False,
+        history_log_path: Optional[Path] = None,
+        history_every:    int            = 1,
+        callback:         Optional[Callable[[int, ParetoResult], None]] = None,
+        verbose:          bool           = False,
     ) -> ParetoResult:
         """
         Run the multi-objective loop.
@@ -572,23 +734,74 @@ class MultiObjective(HarmonySearchOptimizer):
         ----------
         memory_size : int
             HMS for the working population.
-        hmcr, par : float
+        hmcr, par, bw_max, bw_min : float
             Standard HS parameters.
         max_iter : int
             Improvisation steps.
         archive_size : int
             Maximum Pareto archive capacity (pruned by crowding distance).
-        callback : callable, optional
-            ``callback(iteration, partial: ParetoResult)``
+        resume : str
+            ``"auto"`` / ``"new"`` / ``"resume"`` — same as Minimization.
         checkpoint_path, checkpoint_every : optional
             JSON crash-recovery.
+        use_cache, cache_maxsize : optional
+            Evaluation cache settings.
+        log_init, log_evaluations, log_history : bool
+            Enable CSV logging for init memory, all evaluations, and
+            per-iteration best.
+        history_every : int
+            Write to history log every this many iterations.
+        callback : callable, optional
         verbose : bool
         """
+        # --- setup cache and logger ---
+        effective_obj = self.objective
+        if use_cache:
+            self._cache = EvaluationCache(self.objective, maxsize=cache_maxsize)
+            effective_obj = self._cache
+        else:
+            self._cache = None
+
+        ckpt = Path(checkpoint_path) if checkpoint_path else None
+
+        # --- resolve log paths ---
+        from .logging import _resolve_path as _rp
+        init_path = _rp(Path(init_log_path) if init_log_path else None,
+                        ckpt, "_init") if log_init else None
+        eval_path = _rp(Path(eval_log_path) if eval_log_path else None,
+                        ckpt, "_evals") if log_evaluations else None
+        hist_path = _rp(Path(history_log_path) if history_log_path else None,
+                        ckpt, "_history") if log_history else None
+
+        logger = RunLogger(
+            variable_names   = self.space.names(),
+            init_log_path    = init_path,
+            eval_log_path    = eval_path,
+            history_log_path = hist_path,
+            history_every    = history_every,
+        )
+
+        # --- decide resume ---
         archive    = ParetoArchive(max_size=archive_size)
         start_iter = 0
 
-        if checkpoint_path and Path(checkpoint_path).exists():
-            payload      = json.loads(Path(checkpoint_path).read_text())
+        should_resume = False
+        if resume == "resume":
+            if ckpt is None or not ckpt.exists():
+                raise FileNotFoundError(
+                    f"resume='resume' but checkpoint not found: {ckpt}"
+                )
+            should_resume = True
+        elif resume == "auto":
+            should_resume = ckpt is not None and ckpt.exists() and ckpt.stat().st_size > 0
+        elif resume == "new":
+            should_resume = False
+        else:
+            raise ValueError(f"resume must be 'auto', 'new', or 'resume'; got {resume!r}.")
+
+        if should_resume:
+            import json as _json
+            payload      = _json.loads(ckpt.read_text())
             start_iter   = int(payload["iteration"])
             self._memory = HarmonyMemory.from_dict(payload["memory"])
             archive      = ParetoArchive.from_dict(payload["archive"])
@@ -598,12 +811,25 @@ class MultiObjective(HarmonySearchOptimizer):
             self._memory = HarmonyMemory(size=memory_size, mode="min")
             for _ in range(memory_size):
                 h       = self.space.sample_harmony()
-                objs, p = self.objective(h)
+                objs, p = effective_obj(h)
                 objs    = tuple(float(v) for v in objs)
                 p       = float(p)
                 self._memory.add(h, objs[0], p)
                 if p <= 0:
                     archive.add(h, objs)
+
+            if log_init:
+                logger.log_init(
+                    harmonies = self._memory.harmonies,
+                    fitnesses = self._memory._fitness,
+                    penalties = self._memory._penalty,
+                )
+            if ckpt:
+                import json as _json2
+                payload0 = {"iteration": 0,
+                            "memory": self._memory.to_dict(),
+                            "archive": archive.to_dict()}
+                ckpt.write_text(_json2.dumps(payload0, indent=2))
 
         archive_history: List[int] = []
         t0 = time.perf_counter()
@@ -616,7 +842,7 @@ class MultiObjective(HarmonySearchOptimizer):
                 else:
                     new_h = self._improvise(hmcr, par, bw)
 
-                objs, p = self.objective(new_h)
+                objs, p = effective_obj(new_h)
                 objs    = tuple(float(v) for v in objs)
                 p       = float(p)
 
@@ -625,6 +851,7 @@ class MultiObjective(HarmonySearchOptimizer):
                     archive.add(new_h, objs)
 
                 archive_history.append(len(archive))
+                logger.log_evaluation(it + 1, new_h, objs[0], p)
 
                 if verbose:
                     print(
@@ -641,13 +868,14 @@ class MultiObjective(HarmonySearchOptimizer):
                     )
                     callback(it + 1, partial)
 
-                if checkpoint_path and (it + 1) % checkpoint_every == 0:
-                    payload = {
+                if ckpt and (it + 1) % checkpoint_every == 0:
+                    import json as _json3
+                    payload_it = {
                         "iteration": it + 1,
                         "memory":    self._memory.to_dict(),
                         "archive":   archive.to_dict(),
                     }
-                    Path(checkpoint_path).write_text(json.dumps(payload, indent=2))
+                    ckpt.write_text(_json3.dumps(payload_it, indent=2))
 
         except StopIteration:
             pass

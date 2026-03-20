@@ -67,6 +67,9 @@ from .registry import (
     VariableAlreadyRegisteredError,
 )
 
+# --- logging / caching utilities ---
+from .logging import EvaluationCache, RunLogger
+
 # --- built-in domain spaces (trigger registration via import) ---
 from .spaces import (
     # math
@@ -124,6 +127,9 @@ __all__ = [
     "unregister_variable",
     "VariableNotFoundError",
     "VariableAlreadyRegisteredError",
+    # logging / caching
+    "EvaluationCache",
+    "RunLogger",
     # math spaces
     "NaturalNumber",
     "WholeNumber",
