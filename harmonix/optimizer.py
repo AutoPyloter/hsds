@@ -120,9 +120,12 @@ class HarmonyMemory:
         """True when solution *a* is strictly better than *b*."""
         pa, pb = self._penalty[idx_a], self._penalty[idx_b]
         fa, fb = self._fitness[idx_a], self._fitness[idx_b]
-        if pa <= 0 and pb > 0:   return True
-        if pa > 0  and pb <= 0:  return False
-        if pa > 0  and pb > 0:   return pa < pb
+        if pa <= 0 and pb > 0:
+            return True
+        if pa > 0 and pb <= 0:
+            return False
+        if pa > 0 and pb > 0:
+            return pa < pb
         return fa < fb if self.mode == "min" else fa > fb
 
     def best_index(self) -> int:
@@ -150,10 +153,14 @@ class HarmonyMemory:
         w  = self.worst_index()
         pw = self._penalty[w]
         fw = self._fitness[w]
-        if   penalty <= 0 and pw > 0:   replace = True
-        elif penalty > 0  and pw <= 0:  replace = False
-        elif penalty > 0  and pw > 0:   replace = penalty < pw
-        else:                            replace = fitness < fw if self.mode == "min" else fitness > fw
+        if penalty <= 0 and pw > 0:
+            replace = True
+        elif penalty > 0 and pw <= 0:
+            replace = False
+        elif penalty > 0 and pw > 0:
+            replace = penalty < pw
+        else:
+            replace = fitness < fw if self.mode == "min" else fitness > fw
         if replace:
             self._harmonies[w] = harmony
             self._fitness[w]   = fitness

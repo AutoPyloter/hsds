@@ -77,6 +77,7 @@ import math
 import random
 from dataclasses import dataclass
 from pathlib import Path
+from pathlib import Path as _Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from ..variables import Variable
@@ -877,7 +878,7 @@ class SoilSPT(Variable):
 
     def __init__(
         self,
-        site_classes: Optional[_List[str]] = None,
+        site_classes: Optional[List[str]] = None,
         N_min: int = 0,
         N_max: int = 9999,
     ):
@@ -1019,8 +1020,8 @@ class SeismicZoneTBDY(Variable):
 
     def __init__(
         self,
-        hazard_levels: Optional[_List[str]] = None,
-        site_classes:  Optional[_List[str]] = None,
+        hazard_levels: Optional[List[str]] = None,
+        site_classes:  Optional[List[str]] = None,
     ):
         filtered = [
             z for z in _SEISMIC_ZONES
