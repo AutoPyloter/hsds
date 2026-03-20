@@ -216,34 +216,41 @@ class ACIRebar(Variable):
         self,
         d_expr,
         cc_expr,
-        fc: float = 30.0,
-        fy: float = 420.0,
+        fc = 30.0,
+        fy = 420.0,
     ):
         self._d    = d_expr
         self._cc   = cc_expr
-        self.fc    = float(fc)
-        self.fy    = float(fy)
+        self._fc   = fc    # may be float or callable(ctx) -> float
+        self._fy   = fy    # may be float or callable(ctx) -> float
         self._n    = len(_COUNTS)       # number of count steps per diameter
+
+    @property
+    def fc(self): return self._fc if not callable(self._fc) else None
+    @property
+    def fy(self): return self._fy if not callable(self._fy) else None
 
     # --- geometry resolution -----------------------------------------------
 
-    def _resolve(self, ctx: Context) -> Tuple[float, float]:
+    def _resolve(self, ctx: Context) -> Tuple[float, float, float, float]:
         d  = self._d(ctx)  if callable(self._d)  else float(self._d)
         cc = self._cc(ctx) if callable(self._cc) else float(self._cc)
-        return d, cc
+        fc = self._fc(ctx) if callable(self._fc) else float(self._fc)
+        fy = self._fy(ctx) if callable(self._fy) else float(self._fy)
+        return d, cc, fc, fy
 
     # --- valid code enumeration --------------------------------------------
 
     def _valid_codes(self, ctx: Context) -> List[int]:
-        d, cc = self._resolve(ctx)
-        beta1, phi, eps_c, rho_min, rho_max = _aci_limits(self.fc, self.fy)
+        d, cc, fc, fy = self._resolve(ctx)
+        beta1, phi, eps_c, rho_min, rho_max = _aci_limits(fc, fy)
         codes: List[int] = []
         for i, (area50, dia) in enumerate(zip(_AREAS_50, _DIAMETERS)):
             for j, count in enumerate(_COUNTS):
                 if _bar_is_valid_single(
                     dia, count, d, cc,
                     beta1, phi, eps_c, rho_min, rho_max,
-                    self.fc, self.fy, area50,
+                    fc, fy, area50,
                 ):
                     codes.append(i * self._n + j)
         return codes
