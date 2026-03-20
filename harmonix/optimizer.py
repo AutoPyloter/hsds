@@ -610,10 +610,10 @@ class MultiObjective(HarmonySearchOptimizer):
 
         try:
             for it in range(start_iter, max_iter):
+                bw = self._compute_bw(it - start_iter, max_iter - start_iter, bw_max, bw_min)
                 if archive.entries:
                     new_h = self._improvise_from_archive(hmcr, par, archive, bw)
                 else:
-                    bw    = self._compute_bw(it - start_iter, max_iter - start_iter, bw_max, bw_min)
                     new_h = self._improvise(hmcr, par, bw)
 
                 objs, p = self.objective(new_h)
