@@ -618,24 +618,38 @@ class TestEngineeringPhysics:
                 f"{props.name}: Ecm={props.Ecm_GPa:.2f}, expected={expected_Ecm:.2f}"
 
     def test_aci_rebar_all_valid_codes_satisfy_rho(self):
-        """Every code returned by _valid_codes must satisfy rho_min <= rho <= rho_max."""
-        from harmonix.spaces.engineering import ACIRebar, _aci_limits, _AREAS_50, _COUNTS, _DIAMETERS
-        var = ACIRebar(d_expr=0.45, cc_expr=0.06, fc=30.0, fy=420.0)
-        ctx = {"d": 0.45, "cc": 0.06}
-        codes = var._valid_codes(ctx)
-        beta1, phi, eps_c, rho_min, rho_max = _aci_limits(30.0, 420.0)
-        b = 0.30  # assumed width for rho check
-        d = 0.45
+        """Every code returned by _valid_codes must pass _bar_is_valid_single.
+
+        This is a consistency test: codes in _valid_codes must be exactly those
+        for which _bar_is_valid_single returns True.
+        """
+        from harmonix.spaces.engineering import (
+            ACIRebar, _aci_limits, _AREAS_50, _COUNTS, _DIAMETERS,
+            _bar_is_valid_single,
+        )
+        d_eff, cc, fc, fy = 0.45, 0.06, 30.0, 420.0
+        var   = ACIRebar(d_expr=d_eff, cc_expr=cc, fc=fc, fy=fy)
+        codes = var._valid_codes({})
+        assert len(codes) > 0, "No valid codes returned"
+
+        beta1, phi, eps_c, rho_min, rho_max = _aci_limits(fc, fy)
         n_counts = len(_COUNTS)
+
         for code in codes:
             i = code // n_counts
             j = code % n_counts
-            area_per_50 = _AREAS_50[i]
-            count = _COUNTS[j]
-            A_s = area_per_50 / 50.0 * count  # m²
-            rho = A_s / (b * d)
-            assert rho >= rho_min * 0.99, f"code {code}: rho={rho:.5f} < rho_min={rho_min:.5f}"
-            assert rho <= rho_max * 1.01, f"code {code}: rho={rho:.5f} > rho_max={rho_max:.5f}"
+            dia    = _DIAMETERS[i]
+            count  = _COUNTS[j]
+            area50 = _AREAS_50[i]
+            # Every code in the valid set must pass the single-bar check
+            assert _bar_is_valid_single(
+                dia, count, d_eff, cc,
+                beta1, phi, eps_c, rho_min, rho_max,
+                fc, fy, area50,
+            ), (
+                f"code {code} (Ø{dia:.1f}mm ×{count}) is in valid_codes "
+                f"but fails _bar_is_valid_single"
+            )
 
     def test_aci_rebar_callable_fc_produces_different_valid_sets(self):
         """Different fc values must produce different valid code sets."""
