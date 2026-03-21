@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/AutoPyloter/harmonix/actions/workflows/ci.yml/badge.svg)](https://github.com/AutoPyloter/harmonix/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue)](https://www.python.org)
+[![Tests](https://img.shields.io/badge/tests-325%20passed-brightgreen)](#testing)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 **Harmony Search optimisation with dependent variable spaces and engineering domain catalogues.**
@@ -13,14 +14,14 @@ from harmonix import DesignSpace, Continuous, Discrete, Minimization
 
 space = DesignSpace()
 space.add("h",  Continuous(0.30, 1.20))
-space.add("bf", Continuous(lo=lambda ctx: ctx["h"] * 0.5,   # bf >= h/2
-                           hi=lambda ctx: ctx["h"] * 2.0))  # bf <= 2h
+space.add("bf", Continuous(lo=lambda ctx: ctx["h"] * 0.5,
+                           hi=lambda ctx: ctx["h"] * 2.0))
 space.add("n",  Discrete(4, 2, 20))
 
 def objective(harmony):
     h, bf, n = harmony["h"], harmony["bf"], harmony["n"]
     cost    = 1.1 * h * bf + 0.04 * n
-    penalty = max(0.0, h - 2 * bf)    # constraint: h <= 2*bf
+    penalty = max(0.0, h - 2 * bf)
     return cost, penalty
 
 result = Minimization(space, objective).optimize(
@@ -29,7 +30,7 @@ result = Minimization(space, objective).optimize(
 print(result)
 ```
 
----
+-----
 
 ## Installation
 
@@ -39,7 +40,14 @@ pip install harmonix
 
 Requires Python 3.8+. No mandatory dependencies beyond the standard library.
 
----
+For development:
+
+```bash
+pip install -r requirements-dev.txt
+pip install -e .
+```
+
+-----
 
 ## Core concepts
 
@@ -47,22 +55,22 @@ Requires Python 3.8+. No mandatory dependencies beyond the standard library.
 
 Every variable implements three methods that the algorithm calls internally:
 
-| Method | Purpose |
-|--------|---------|
-| `sample(ctx)` | Draw a random feasible value |
-| `filter(candidates, ctx)` | Keep only feasible values from harmony memory |
-| `neighbor(value, ctx)` | Return an adjacent feasible value (pitch adjustment) |
+|Method                   |Purpose                                             |
+|-------------------------|----------------------------------------------------|
+|`sample(ctx)`            |Draw a random feasible value                        |
+|`filter(candidates, ctx)`|Keep only feasible values from harmony memory       |
+|`neighbor(value, ctx)`   |Return an adjacent feasible value (pitch adjustment)|
 
 The `ctx` argument is a dict of all variable values assigned earlier in the same harmony. This enables **dependent bounds** — the domain of a variable can depend on previously assigned variables.
 
 ### Built-in variable types
 
-| Type | Domain |
-|------|--------|
-| `Continuous(lo, hi)` | ℝ ∩ \[lo, hi\] |
-| `Discrete(lo, step, hi)` | {lo, lo+step, …, hi} |
-| `Integer(lo, hi)` | {lo, lo+1, …, hi} |
-| `Categorical(choices)` | finite label set |
+|Type                    |Domain              |
+|------------------------|--------------------|
+|`Continuous(lo, hi)`    |ℝ ∩ [lo, hi]        |
+|`Discrete(lo, step, hi)`|{lo, lo+step, …, hi}|
+|`Integer(lo, hi)`       |{lo, lo+1, …, hi}   |
+|`Categorical(choices)`  |finite label set    |
 
 All bounds accept callables for dependent domains:
 
@@ -74,19 +82,21 @@ space.add("tw", Continuous(lo=lambda ctx: ctx["d"] / 50,
 
 ### Domain-specific variable spaces
 
-harmonix ships a catalogue of ready-made variable types for common engineering and mathematical domains. Import them directly or use the registry:
+harmonix ships a catalogue of ready-made variable types for common engineering and mathematical domains:
 
 ```python
 from harmonix import ACIRebar, SteelSection, ConcreteGrade, PrimeVariable
 
-# ACI 318 ductile bar arrangement (single row)
-space.add("rebar", ACIRebar(d_expr=lambda ctx: ctx["d"], cc_expr=40.0,
-                            fc=30.0, fy=420.0))
+# ACI 318 ductile bar arrangement — bounds depend on d and fc
+space.add("rebar", ACIRebar(d_expr=lambda ctx: ctx["d"],
+                            cc_expr=60.0,
+                            fc=lambda ctx: ctx["grade"].fck_MPa,
+                            fy=420.0))
 
-# Standard steel I-section from built-in catalogue
-space.add("section", SteelSection(series="IPE"))
+# Standard steel I-section from built-in catalogue (IPE, HEA, HEB, W)
+space.add("section", SteelSection(series=["IPE", "HEA"]))
 
-# EN 206 concrete grade
+# EN 206 concrete grade (C12/15 to C90/105)
 space.add("concrete", ConcreteGrade(min_grade="C25/30", max_grade="C50/60"))
 
 # Prime numbers
@@ -95,12 +105,12 @@ space.add("p", PrimeVariable(lo=2, hi=500))
 
 Full catalogue:
 
-| Category | Types |
-|----------|-------|
-| **Mathematical** | `NaturalNumber`, `WholeNumber`, `NegativeInt`, `NegativeReal`, `PositiveReal`, `PrimeVariable`, `PowerOfTwo`, `Fibonacci` |
-| **Structural** | `ACIRebar`, `ACIDoubleRebar`, `SteelSection`, `ConcreteGrade` |
-| **Geotechnical** | `SoilSPT` |
-| **Seismic** | `SeismicZoneTBDY` |
+|Category        |Types                                                                                                                    |
+|----------------|-------------------------------------------------------------------------------------------------------------------------|
+|**Mathematical**|`NaturalNumber`, `WholeNumber`, `NegativeInt`, `NegativeReal`, `PositiveReal`, `PrimeVariable`, `PowerOfTwo`, `Fibonacci`|
+|**Structural**  |`ACIRebar`, `ACIDoubleRebar`, `SteelSection`, `ConcreteGrade`                                                            |
+|**Geotechnical**|`SoilSPT`                                                                                                                |
+|**Seismic**     |`SeismicZoneTBDY`                                                                                                        |
 
 All types are also accessible via the plugin registry:
 
@@ -119,9 +129,9 @@ from harmonix import Variable, register_variable
 
 @register_variable("my_type")
 class MyVariable(Variable):
-    def sample(self, ctx):    ...
-    def filter(self, candidates, ctx): ...
-    def neighbor(self, value, ctx):    ...
+    def sample(self, ctx):              ...
+    def filter(self, candidates, ctx):  ...
+    def neighbor(self, value, ctx):     ...
 ```
 
 **Factory function** for quick prototyping:
@@ -139,7 +149,7 @@ EvenVar = make_variable(
 space.add("n", EvenVar())
 ```
 
----
+-----
 
 ## Optimisers
 
@@ -147,14 +157,23 @@ space.add("n", EvenVar())
 
 ```python
 result = Minimization(space, objective).optimize(
-    memory_size      = 20,     # Harmony Memory Size (HMS)
-    hmcr             = 0.85,   # Harmony Memory Considering Rate
-    par              = 0.35,   # Pitch Adjusting Rate
+    memory_size      = 20,       # Harmony Memory Size (HMS)
+    hmcr             = 0.85,     # Harmony Memory Considering Rate
+    par              = 0.35,     # Pitch Adjusting Rate
     max_iter         = 5000,
-    verbose          = True,
-    callback         = my_callback,          # optional
-    checkpoint_path  = "run.json",           # optional: crash recovery
+    bw_max           = 0.05,     # Initial bandwidth (5% of domain width)
+    bw_min           = 0.001,    # Final bandwidth (exponential decay)
+    resume           = "auto",   # "auto" | "new" | "resume"
+    checkpoint_path  = "run.json",
     checkpoint_every = 500,
+    use_cache        = False,    # Cache identical harmony evaluations
+    cache_maxsize    = 4096,
+    log_init         = False,    # Write initial memory to CSV
+    log_history      = False,    # Write best-per-iteration to CSV
+    log_evaluations  = False,    # Write every evaluated harmony to CSV
+    history_every    = 1,
+    verbose          = True,
+    callback         = my_callback,
 )
 print(result.best_harmony)
 print(result.best_fitness)
@@ -162,7 +181,7 @@ print(result.best_fitness)
 
 ### Maximization
 
-Same interface — negate internally, reports original sign.
+Same interface — negates internally, reports original sign.
 
 ```python
 result = Maximization(space, objective).optimize(...)
@@ -178,7 +197,7 @@ def objective(harmony):
 
 result = MultiObjective(space, objective).optimize(
     max_iter     = 10_000,
-    archive_size = 100,        # Pareto archive capacity
+    archive_size = 100,
 )
 
 for entry in result.front:
@@ -194,29 +213,69 @@ def my_callback(iteration, partial_result):
         raise StopIteration    # stops the loop cleanly
 ```
 
-### Crash recovery (checkpointing)
+-----
+
+## Advanced features
+
+### Dynamic bandwidth narrowing
+
+The pitch adjustment step size decays exponentially from `bw_max` to `bw_min` over the run — wide exploration early, fine convergence late.
 
 ```python
-# First run — saves state every 1000 iterations
-result = optimizer.optimize(
-    max_iter         = 50_000,
-    checkpoint_path  = "run.json",
-    checkpoint_every = 1000,
-)
-
-# If interrupted, re-run the same line — resumes automatically
-result = optimizer.optimize(
-    max_iter         = 50_000,
-    checkpoint_path  = "run.json",
-    checkpoint_every = 1000,
+result = Minimization(space, objective).optimize(
+    bw_max=0.10,   # 10% of domain width at iteration 0
+    bw_min=0.001,  # 0.1% at final iteration
+    max_iter=5000,
 )
 ```
 
----
+Set `bw_max == bw_min` for constant bandwidth (original HS behaviour). Discrete and categorical variables are unaffected by bandwidth.
+
+### Resume control
+
+```python
+# "auto"   — continue if checkpoint exists, start fresh otherwise (safe default)
+# "new"    — always start fresh, overwrite any existing checkpoint
+# "resume" — always continue; raises FileNotFoundError if checkpoint missing
+
+result = optimizer.optimize(
+    max_iter        = 50_000,
+    checkpoint_path = "run.json",
+    resume          = "auto",
+)
+```
+
+The initial harmony memory is saved immediately at startup — even a run interrupted in the first seconds can be resumed cleanly.
+
+### Evaluation cache
+
+Identical harmonies are never re-evaluated when `use_cache=True`. Particularly valuable for expensive objectives (FEM, CFD, etc.).
+
+```python
+result = optimizer.optimize(use_cache=True, cache_maxsize=4096)
+print(optimizer._cache.stats())
+# EvaluationCache: 412 hits / 1005 total (41.0% hit rate)  size=593/4096
+```
+
+### CSV logging
+
+```python
+result = optimizer.optimize(
+    checkpoint_path  = "run.json",
+    log_init         = True,    # → run_init.csv     (initial memory)
+    log_history      = True,    # → run_history.csv  (best per iteration)
+    log_evaluations  = True,    # → run_evals.csv    (every evaluation)
+    history_every    = 10,      # write history every 10 iterations
+)
+```
+
+All CSV files are readable directly in Excel or with `pandas.read_csv()`.
+
+-----
 
 ## Decoding engineering variables
 
-Variables like `ACIRebar` and `SteelSection` store integer codes in the harmony. Use `decode()` to get the full properties:
+Variables like `ACIRebar` and `SteelSection` store integer codes in the harmony. Use `decode()` to get full properties:
 
 ```python
 rebar_var = ACIRebar(d_expr=0.55, cc_expr=40.0)
@@ -224,62 +283,97 @@ code = result.best_harmony["rebar"]
 diameter_mm, bar_count = rebar_var.decode(code)
 print(rebar_var.describe(code))   # "8 bars of Ø19.00 mm"
 
-section_var = SteelSection(series="IPE")
-idx = result.best_harmony["section"]
-sec = section_var.decode(idx)
-print(sec.name, sec.Iy_cm4, "cm⁴")
+section_var = SteelSection(series=["IPE"])
+sec = section_var.decode(result.best_harmony["section"])
+print(sec.name, sec.Iy_cm4, "cm4")
+
+grade_var = ConcreteGrade()
+grade = grade_var.decode(result.best_harmony["concrete"])
+print(grade.name, grade.fck_MPa, "MPa", grade.Ecm_GPa, "GPa")
 ```
 
 ### Steel section catalogue
 
-The built-in catalogue covers IPE 80–600, HEA 100–500, HEB 100–500, and a selection of W-sections. You can override it with your own JSON or CSV file:
+The built-in catalogue covers IPE 80–600, HEA 100–500, HEB 100–500, and W-sections. Override with your own file:
 
 ```python
-# JSON: list of objects with keys matching SectionProperties fields
-var = SteelSection(catalogue="my_sections.json")
-
-# Filter to a subset of series
-var = SteelSection(series=["HEA", "HEB"])
+var = SteelSection(catalogue="my_sections.json")  # custom catalogue
+var = SteelSection(series=["HEA", "HEB"])          # filter series
 ```
 
----
+-----
 
 ## Algorithm background
 
-harmonix implements the Harmony Search algorithm with two key enhancements over the basic formulation:
+harmonix implements Harmony Search with several enhancements:
 
-**Intelligent pitch adjustment** — when PAR fires, `neighbor()` is called with the current dependency context, so the perturbed value is guaranteed to remain feasible. This replaces the common but incorrect approach of calling `sample()` again on PAR, which ignores the context and treats PAR as a second random draw.
+**Dynamic bandwidth narrowing** — pitch adjustment step size decays exponentially. Early iterations explore broadly; late iterations converge precisely.
 
-**Dependent search spaces** — variables are sampled in definition order and each receives a context dict of previously assigned values. This means dependent bounds, catalogue filters, and feasibility checks can all reference earlier variables without any special handling in the optimizer loop.
+**Intelligent pitch adjustment** — `neighbor()` is called with the current dependency context so the perturbed value stays feasible. The common incorrect approach of calling `sample()` on PAR is avoided.
+
+**Dependent search spaces** — variables are sampled in definition order; each receives a context dict of previously assigned values. Dependent bounds, catalogue filters, and feasibility checks can reference earlier variables without any special handling in the optimiser loop.
+
+**Deb constraint handling** — feasible solutions always rank above infeasible ones; among infeasible solutions ranking is by total penalty.
 
 ### References
 
 - Geem, Z. W., Kim, J. H., & Loganathan, G. V. (2001). A new heuristic optimization algorithm: Harmony search. *Simulation*, 76(2), 60–68.
 - Lee, K. S., & Geem, Z. W. (2005). A new meta-heuristic algorithm for continuous engineering optimization. *Computer Methods in Applied Mechanics and Engineering*, 194(36–38), 3902–3933.
 - Deb, K. (2000). An efficient constraint handling method for genetic algorithms. *Computer Methods in Applied Mechanics and Engineering*, 186(2–4), 311–338.
+- Ricart, J., Hüttemann, G., Lima, J., & Barán, B. (2011). Multiobjective harmony search algorithm proposals. *Electronic Notes in Theoretical Computer Science*, 281, 51–67.
 
----
+-----
+
+## Testing
+
+```bash
+pip install -r requirements-dev.txt
+pytest tests/ -v
+```
+
+325 tests across 9 test files covering:
+
+- All variable types — `sample`, `filter`, `neighbor`, edge cases, `lo > hi` validation
+- DesignSpace — dependency chains, empty space, 50-variable stress test
+- Optimisers — Minimization, Maximization, MultiObjective
+- New features — bandwidth decay, resume modes, evaluation cache, CSV logging
+- Pareto archive — dominance, crowding distance, serialization
+- Engineering physics — EC2 formulas, ACI 318 feasibility, steel section properties
+- Determinism — same seed produces identical results
+- Numerical correctness — Sphere, Rosenbrock, constrained minimization
+
+-----
 
 ## Project structure
 
 ```
 harmonix/
 ├── harmonix/
-│   ├── variables.py      # Continuous, Discrete, Integer, Categorical
-│   ├── space.py          # DesignSpace
-│   ├── optimizer.py      # Minimization, Maximization, MultiObjective
-│   ├── pareto.py         # Pareto archive, crowding distance
-│   ├── registry.py       # register_variable, make_variable
+│   ├── variables.py       # Continuous, Discrete, Integer, Categorical
+│   ├── space.py           # DesignSpace
+│   ├── optimizer.py       # Minimization, Maximization, MultiObjective
+│   ├── pareto.py          # Pareto archive, crowding distance
+│   ├── registry.py        # register_variable, make_variable
+│   ├── logging.py         # EvaluationCache, RunLogger
 │   └── spaces/
-│       ├── math.py       # Mathematical search spaces
+│       ├── math.py        # Mathematical search spaces
 │       └── engineering.py # Engineering domain spaces
 ├── examples/
-├── tests/
+│   ├── 01_quickstart.py
+│   ├── 02_dependent_bounds.py
+│   ├── 03_engineering_rc_beam.py
+│   ├── 04_custom_variables.py
+│   ├── 05_multi_objective.py
+│   ├── 06_steel_beam_design.py
+│   └── 07_rc_section_full.py
+├── tests/                 # 325 tests across 9 files
+├── requirements-dev.txt
+├── ruff.toml
 ├── pyproject.toml
 └── LICENSE
 ```
 
----
+-----
 
 ## License
 
