@@ -419,7 +419,7 @@ class HarmonySearchOptimizer(ABC):
         self._memory = HarmonyMemory.from_dict(payload["memory"])
         return int(payload["iteration"])
 
-    def optimize(self, **kwargs: Any) -> Any:  # type: ignore[override]
+    def optimize(self, **kwargs: Any) -> Any:
         """Override in subclasses."""
         raise NotImplementedError
 
@@ -448,7 +448,7 @@ class Minimization(HarmonySearchOptimizer):
     >>> print(result.best_fitness)
     """
 
-    def optimize(
+    def optimize(  # type: ignore[override]
         self,
         *,
         memory_size: int = 20,
@@ -596,7 +596,7 @@ class Maximization(HarmonySearchOptimizer):
         ``objective(harmony) -> (fitness: float, penalty: float)``
     """
 
-    def optimize(
+    def optimize(  # type: ignore[override]
         self,
         *,
         memory_size: int = 20,
@@ -715,7 +715,7 @@ class MultiObjective(HarmonySearchOptimizer):
     ...     print(e.objectives)
     """
 
-    def optimize(
+    def optimize(  # type: ignore[override]
         self,
         *,
         memory_size: int = 30,
