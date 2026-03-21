@@ -8,25 +8,50 @@ version = "1.0.0"
 description = "Harmony Search optimisation with dependent variable spaces and engineering domain catalogues"
 readme = "README.md"
 license = { text = "MIT" }
-authors = [{ name = "Abdulkadir Özcan" }]
+authors = [{ name = "Abdulkadir Özcan", email = "abdulkadirozcan@outlook.com" }]
 requires-python = ">=3.8"
 keywords = [
-    "harmony search", "metaheuristic", "optimisation",
-    "structural engineering", "multi-objective",
+    "harmony search",
+    "metaheuristic",
+    "optimisation",
+    "optimization",
+    "structural engineering",
+    "multi-objective",
+    "pareto",
+    "aci-318",
+    "ec2",
+    "engineering optimization",
 ]
 classifiers = [
+    "Development Status :: 5 - Production/Stable",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "License :: OSI Approved :: MIT License",
     "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Mathematics",
     "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Typing :: Typed",
 ]
 
 [project.urls]
+"Homepage" = "https://github.com/AutoPyloter/harmonix"
 "Source" = "https://github.com/AutoPyloter/harmonix"
+"Bug Tracker" = "https://github.com/AutoPyloter/harmonix/issues"
+"Documentation" = "https://github.com/AutoPyloter/harmonix/wiki"
+"Changelog" = "https://github.com/AutoPyloter/harmonix/releases"
 
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["harmonix*"]
+
+[tool.setuptools.package-data]
+harmonix = ["py.typed"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
