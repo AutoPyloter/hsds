@@ -24,7 +24,7 @@ import json
 import math
 import random
 import time
-from abc import ABC, abstractmethod
+from abc import ABC
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
@@ -419,8 +419,9 @@ class HarmonySearchOptimizer(ABC):
         self._memory = HarmonyMemory.from_dict(payload["memory"])
         return int(payload["iteration"])
 
-    @abstractmethod
-    def optimize(self, **kwargs: Any) -> Any: ...
+    def optimize(self, **kwargs: Any) -> Any:  # type: ignore[override]
+        """Override in subclasses."""
+        raise NotImplementedError
 
 
 # ---------------------------------------------------------------------------
@@ -550,7 +551,7 @@ class Minimization(HarmonySearchOptimizer):
                 logger.log_iteration(it + 1, best_h, best_f, best_p)
 
                 if verbose:
-                    print(f"[HS] iter {it + 1:>6d} | " f"fitness = {best_f:.6g} | penalty = {best_p:.4g}")
+                    print(f"[HS] iter {it + 1:>6d} | fitness = {best_f:.6g} | penalty = {best_p:.4g}")
 
                 if callback is not None:
                     partial = OptimizationResult(
@@ -866,7 +867,7 @@ class MultiObjective(HarmonySearchOptimizer):
                 logger.log_evaluation(it + 1, new_h, objs[0], p)
 
                 if verbose:
-                    print(f"[MO-HS] iter {it + 1:>6d} | " f"archive = {len(archive):>4d} solutions")
+                    print(f"[MO-HS] iter {it + 1:>6d} | archive = {len(archive):>4d} solutions")
 
                 if callback is not None:
                     partial = ParetoResult(

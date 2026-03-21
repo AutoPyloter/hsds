@@ -151,7 +151,7 @@ class Continuous(Variable):
         width = hi - lo
         if width <= 0:
             return value
-        bw = ctx.get("__bw__", 0.05)
+        bw: float = ctx.get("__bw__", 0.05)  # type: ignore[assignment]
         new_val = value + random.gauss(0.0, bw * width)
         return max(lo, min(hi, new_val))
 
