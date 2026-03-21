@@ -2,22 +2,14 @@
 line-length = 120
 
 [lint]
-# E: pycodestyle errors
-# F: pyflakes (unused imports, undefined names)
-# W: pycodestyle warnings
-# I: isort
-# UP: pyupgrade (but only non-breaking ones)
-select = ["E", "F", "W"]
+select = ["E", "F", "W", "I"]
 
-# Ignore rules that would be too noisy for this codebase
 ignore = [
-    "E501",   # line too long — handled by formatter separately
+    "E501",   # line too long
     "E741",   # ambiguous variable name (l, O, I) — used in math formulas
-    "W605",   # invalid escape sequence — in docstrings with LaTeX
-    "F401",   # unused import — some re-exports in __init__.py
+    "W605",   # invalid escape sequence — in docstrings
 ]
 
-# Don't check generated/vendored code
 exclude = [
     ".git",
     "__pycache__",
@@ -27,8 +19,11 @@ exclude = [
 ]
 
 [lint.per-file-ignores]
-# __init__.py re-exports everything — F401 (unused imports) is expected
 "harmonix/__init__.py" = ["F401"]
 "harmonix/spaces/__init__.py" = ["F401"]
-# Tests use wildcard assertions and may have long lines
 "tests/*" = ["E402", "F811"]
+
+[format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
