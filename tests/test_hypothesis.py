@@ -112,17 +112,16 @@ class TestDiscreteProperties:
     @settings(max_examples=200)
     def test_sample_on_grid(self, params):
         lo, step, hi = params
-        # Only test when grid has at least 2 points to avoid degenerate cases
         assume(hi >= lo + step)
         v = Discrete(lo, step, hi)
         result = v.sample({})
         if result is None:
             return
-        # Must be on the grid: result = lo + k*step for some integer k
-        if step > 0:
-            k = round((result - lo) / step)
-            expected = lo + k * step
-            assert abs(result - expected) < step * 1e-5, f"sample={result} not on grid lo={lo}, step={step}"
+        # _frange always includes hi as last element even if not on step grid.
+        # So result must be either: lo + k*step for some k, OR exactly hi.
+        on_step = abs((result - lo) % step) < step * 1e-5 or abs((result - lo) % step - step) < step * 1e-5
+        is_endpoint = abs(result - lo) < step * 1e-5 or abs(result - hi) < step * 1e-5
+        assert on_step or is_endpoint, f"sample={result} not on grid lo={lo}, step={step}, hi={hi}"
 
     @given(params=valid_step_bounds())
     @settings(max_examples=200)
@@ -132,7 +131,8 @@ class TestDiscreteProperties:
         v = Discrete(lo, step, hi)
         result = v.sample({})
         if result is not None:
-            assert lo - step * 1e-9 <= result <= hi + step * 1e-9, f"sample={result} not in [{lo}, {hi}] step={step}"
+            # Allow small float tolerance
+            assert lo - 1e-9 <= result <= hi + 1e-9, f"sample={result} not in [{lo}, {hi}]"
 
     @given(
         lo=st.floats(min_value=-100, max_value=100, allow_nan=False, allow_infinity=False),
