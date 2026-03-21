@@ -470,7 +470,7 @@ class TestSerializationIntegrity:
         ckpt = _tmp()
         try:
             opt1 = MultiObjective(space, zdt_simple)
-            r1 = opt1.optimize(memory_size=10, max_iter=100, archive_size=20,
+            opt1.optimize(memory_size=10, max_iter=100, archive_size=20,
                                checkpoint_path=ckpt, checkpoint_every=100)
             opt2 = MultiObjective(space, zdt_simple)
             r2 = opt2.optimize(memory_size=10, max_iter=200, archive_size=20,
@@ -672,3 +672,4 @@ class TestEngineeringPhysics:
                 ratio = wy_approx / sec.Wy_cm3 if sec.Wy_cm3 > 0 else 1.0
                 assert 0.8 <= ratio <= 1.25, \
                     f"{sec.name}: Wy={sec.Wy_cm3:.1f}, approx={wy_approx:.1f}"
+

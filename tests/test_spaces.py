@@ -108,9 +108,11 @@ class TestPositiveReal:
 class TestPrimeVariable:
     def test_all_prime(self):
         def is_prime(n):
-            if n < 2: return False
+            if n < 2:
+                return False
             for i in range(2, int(n**0.5) + 1):
-                if n % i == 0: return False
+                if n % i == 0:
+                    return False
             return True
 
         v = PrimeVariable(hi=50)
@@ -396,3 +398,4 @@ class TestParetoDominance:
         from harmonix.pareto import dominates
         with pytest.raises(ValueError):
             dominates((1.0,), (1.0, 2.0))
+
