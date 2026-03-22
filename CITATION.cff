@@ -5,7 +5,7 @@ authors:
     given-names: "Abdulkadir"
 title: "harmonix-opt: Harmony Search optimisation with dependent variable spaces"
 version: 1.0.1
-doi: "10.5281/zenodo.19160019"
+doi: "10.5281/zenodo.19160245"
 date-released: 2026-03-22
 url: "https://github.com/AutoPyloter/harmonix"
 repository-code: "https://github.com/AutoPyloter/harmonix"
