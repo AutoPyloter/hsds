@@ -1,6 +1,6 @@
 # harmonix
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19160019.svg)](https://doi.org/10.5281/zenodo.19160019)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19160245.svg)](https://doi.org/10.5281/zenodo.19160245)
 [![PyPI](https://img.shields.io/pypi/v/harmonix-opt)](https://pypi.org/project/harmonix-opt/)
 [![CI](https://github.com/AutoPyloter/harmonix/actions/workflows/ci.yml/badge.svg)](https://github.com/AutoPyloter/harmonix/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue)](https://www.python.org)
@@ -382,7 +382,7 @@ harmonix/
 If you use `harmonix-opt` in your research, please cite it as follows:
 
 **APA:**
-> Özcan, A. (2026). harmonix-opt: Harmony Search optimisation with dependent variable spaces (Version 1.0.1) [Computer software]. https://doi.org/10.5281/zenodo.19160019
+> Özcan, A. (2026). harmonix-opt: Harmony Search optimisation with dependent variable spaces (Version 1.0.1) [Computer software]. https://doi.org/10.5281/zenodo.19160245
 
 **BibTeX:**
 ```bibtex
@@ -393,8 +393,8 @@ If you use `harmonix-opt` in your research, please cite it as follows:
   year         = 2026,
   publisher    = {Zenodo},
   version      = {1.0.1},
-  doi          = {10.5281/zenodo.19160019},
-  url          = {[https://doi.org/10.5281/zenodo.19160019](https://doi.org/10.5281/zenodo.19160019)}
+  doi          = {10.5281/zenodo.19160245},
+  url          = {[https://doi.org/10.5281/zenodo.19160245](https://doi.org/10.5281/zenodo.19160245)}
 }
 ```
 
