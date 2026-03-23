@@ -8,9 +8,11 @@ The Welded Beam problem demonstrates the fundamental advantage of embedding phys
 
 | Metric | Static Penalty | Dependent Space | Improvement |
 |---|---|---|---|
-| **Best Cost** | 2.5141 | 2.1669 | **~14% better** |
+| **Best Cost** | 2.5141 | **2.1669** | **~14% better** |
 | **Execution Time** | 1.40s | 1.39s | Comparable |
 | **Total Penalty** | 0.0 | 0.0 | Both converged |
+
+*Values sourced from single-run `summary.json`. Note: The 50-run statistical minimum (see `STATISTICAL_REPORT.md`) reaches 1.7258, but that represents stochastic best-case across 50 independent seeds rather than a reproducible single-run benchmark.*
 
 ### Engineering Insights
 1. **Convergence Speed:** The Static Penalty approach remains trapped in the infeasible region with high penalty scores for the first 10,000 iterations. Conversely, the Extreme Dependent Space approach produces almost exclusively valid designs right from the first iteration.
@@ -20,4 +22,4 @@ The Welded Beam problem demonstrates the fundamental advantage of embedding phys
 ### Visualization Guide
 When observing the `welded_beam_comparison.png` graph:
 - **Absence of initial spikes = Elimination of physically impossible designs.** The green dashed line (Dependent Space) immediately begins exploring the feasible cost block (under 6.0), entirely bypassing the massive structural failure region that the Static Penalty (red solid line) struggles through initially.
-- **Steep descent = Rapid convergence.** The Dependent Space configuration drops precipitously toward 2.2 within the first 5,000 iterations, confirming exceptionally high exploitation efficiency.
+- **Steep descent = Rapid convergence.** The Dependent Space configuration drops precipitously toward 2.17 within the first 5,000 iterations, confirming exceptionally high exploitation efficiency.

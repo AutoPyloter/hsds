@@ -13,6 +13,8 @@ The Pressure Vessel problem illustrates a powerful 4-tier evaluation of constrai
 | **Semi-Dependent**      | **5804.42** | 1.31s          | 0.0 at end     |
 | **Full Parametric**     | **5804.38** | 1.33s          | 0.0 always     |
 
+*Values sourced from individual `summary.json` files. The `full_parametric_extreme` method is used as the Dependent Space representative in `BENCHMARK_REPORT.md`.*
+
 ### Engineering Insights
 1. **Convergence vs Precision:** The initial `dependent_space` model (utilizing static outer bounds with $L$ remaining independent) yielded slightly inferior results compared to `static_penalty` (6642 vs 6180) because the $L$ variable was still exploring a massive, heavily restricted domain regarding cylinder volume.
 2. **The Breakthrough:** Upon deploying the `semi_dependent` space, where $L$ mathematically enforced the required internal volume (constraint g3), the objective cost plunged by **~6% relative to the baseline** (5804 vs 6180). Analytically embedding the volume constraint into the $L$ variable diminished the search space by nearly 90%, substantially enhancing the solution quality.

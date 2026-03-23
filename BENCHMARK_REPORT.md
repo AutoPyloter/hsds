@@ -7,16 +7,18 @@ By natively embedding physical equations (like buckling constraints, geotechnica
 
 ## Benchmark Performance Matrix
 
-| Problem | Baseline (Penalty) Opt. Cost | Dependent (Harmonix) Opt. Cost | Dependent Time | Zero-Penalty Integration |
-| :--- | :--- | :--- | :--- | :--- |
-| **Welded Beam** | 2.3811 | **1.7248** ($27.6\%$ better) | $\sim 2.05s$ | Partial (Buckling/Shear) |
-| **Pressure Vessel** | 6059.721 | **6059.714** (High precision) | $\sim 2.15s$ | **100%** (Volume Inverted) |
-| **Spring Design** | 0.01268 | **0.01266** | $\sim 1.95s$ | **100%** (Full Analytical) |
-| **Speed Reducer** | 2996.350 | **2996.348** | $\sim 1.83s$ | **100%** (11 Constraints) |
-| **Robot Gripper** | 100.003 | **100.001** | $\sim 1.83s$ | **100%** (Linkage Geometry) |
-| **Retaining Wall** | 219.46 | **190.08** ($13.4\%$ better)| $\sim 14.5s$ | **100%** (Geotech + ACI Spaces) |
+> **Note on Method Selection:** Each problem compares its *best available* Dependent Space variant against the Static Penalty baseline. For Pressure Vessel and Spring Design this is the `full_parametric_extreme` method; for Speed Reducer and Robot Gripper it is also `full_parametric_extreme`; for Welded Beam and Retaining Wall it is `dependent_space`. Single-run results from individual `summary.json` files are shown below; see `STATISTICAL_REPORT.md` for 50-run statistical validation.
 
-*Note: All algorithms ran for 30,000 iterations identically configured.*
+| Problem | Baseline (Static Penalty) | Dependent Space Best | Time (Dep.) | Zero-Penalty Integration |
+| :--- | :--- | :--- | :--- | :--- |
+| **Welded Beam** | 2.5141 | **2.1669** ($\sim14\%$ better) | $\sim 1.39s$ | Partial (Buckling/Shear) |
+| **Pressure Vessel** *(full\_param)* | 6180.289 | **5804.376** ($\sim6\%$ better) | $\sim 1.33s$ | **100%** (Volume Inverted) |
+| **Spring Design** *(full\_param)* | 0.013709 | **0.010637** ($\sim22\%$ better) | $\sim 1.20s$ | **100%** (Full Analytical) |
+| **Speed Reducer** *(full\_param)* | 2996.350 | **2996.348** | $\sim 2.02s$ | **100%** (11 Constraints) |
+| **Robot Gripper** *(full\_param)* | 100.0039 | **100.0014** | $\sim 1.84s$ | **100%** (Linkage Geometry) |
+| **Retaining Wall** | 219.461 | **190.080** ($\sim13.4\%$ better) | $\sim 14.55s$ | **100%** (Geotech + ACI Spaces) |
+
+*Note: Retaining Wall uses 15,000 iterations; all other problems use 30,000 iterations.*
 
 ## The Harmonix Advantage
 1. **Zero Infeasible Operations Strategy:** Without Harmonix, standard penalty-based arrays are forced to randomly sample the blind multi-dimensional hypercube. E.g., in the Robot Gripper problem, traditional uniform generation produces a broken (unassemblable) linkage matrix almost 50% of the time. The Dependent Space structurally eliminates this waste. Every $O(n)$ cycle processes physically valid engineering geometry.
