@@ -1,0 +1,9 @@
+{
+  "method": "full_parametric_extreme",
+  "problem": "spring_design",
+  "best_cost": 0.01063696,
+  "total_penalty": 0.0,
+  "execution_time": 1.2018,
+  "total_iterations": 30000,
+  "computed_d_max": 1.25
+}

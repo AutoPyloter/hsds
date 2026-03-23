@@ -1,0 +1,8 @@
+{
+  "method": "full_parametric_extreme",
+  "problem": "robot_gripper",
+  "best_cost": 100.00136616577828,
+  "total_penalty": 0.0,
+  "execution_time": 1.8367668999999296,
+  "total_iterations": 30000
+}

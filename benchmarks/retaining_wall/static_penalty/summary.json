@@ -1,0 +1,8 @@
+{
+  "method": "static_penalty",
+  "problem": "retaining_wall",
+  "best_cost": 219.46086897482385,
+  "total_penalty": 0.0,
+  "execution_time": 1.2185829000081867,
+  "total_iterations": 15000
+}

@@ -1,0 +1,8 @@
+{
+  "method": "semi_dependent",
+  "problem": "pressure_vessel",
+  "best_cost": 5804.42221978,
+  "total_penalty": 0.0,
+  "execution_time": 1.3087,
+  "total_iterations": 30000
+}

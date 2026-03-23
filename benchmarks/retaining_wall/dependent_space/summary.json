@@ -1,0 +1,8 @@
+{
+  "method": "dependent_space",
+  "problem": "retaining_wall",
+  "best_cost": 190.08020000000002,
+  "total_penalty": 0.0,
+  "execution_time": 14.55206210000324,
+  "total_iterations": 15000
+}

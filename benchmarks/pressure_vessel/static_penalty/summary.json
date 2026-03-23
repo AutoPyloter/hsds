@@ -1,0 +1,8 @@
+{
+  "method": "static_penalty",
+  "problem": "pressure_vessel",
+  "best_cost": 6180.28928172,
+  "total_penalty": 0.0,
+  "execution_time": 1.3015,
+  "total_iterations": 30000
+}

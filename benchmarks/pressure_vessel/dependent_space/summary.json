@@ -1,0 +1,8 @@
+{
+  "method": "dependent_space",
+  "problem": "pressure_vessel",
+  "best_cost": 6642.92183455,
+  "total_penalty": 0.0,
+  "execution_time": 1.331,
+  "total_iterations": 30000
+}

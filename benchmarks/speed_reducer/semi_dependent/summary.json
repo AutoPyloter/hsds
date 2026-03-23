@@ -1,0 +1,8 @@
+{
+  "method": "semi_dependent",
+  "problem": "speed_reducer",
+  "best_cost": 2996.3498767135866,
+  "total_penalty": 0.0,
+  "execution_time": 1.87564550001116,
+  "total_iterations": 30000
+}

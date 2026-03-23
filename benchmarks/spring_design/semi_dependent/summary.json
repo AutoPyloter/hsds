@@ -1,0 +1,8 @@
+{
+  "method": "semi_dependent",
+  "problem": "spring_design",
+  "best_cost": 0.01063077,
+  "total_penalty": 0.0,
+  "execution_time": 1.1747,
+  "total_iterations": 30000
+}

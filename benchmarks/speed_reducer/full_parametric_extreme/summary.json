@@ -1,0 +1,8 @@
+{
+  "method": "full_parametric_extreme",
+  "problem": "speed_reducer",
+  "best_cost": 2996.3481649685295,
+  "total_penalty": 0.0,
+  "execution_time": 2.017736599998898,
+  "total_iterations": 30000
+}

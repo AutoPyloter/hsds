@@ -1,0 +1,9 @@
+{
+  "method": "full_parametric_extreme",
+  "problem": "pressure_vessel",
+  "best_cost": 5804.37621676,
+  "total_penalty": 0.0,
+  "execution_time": 1.3309,
+  "total_iterations": 30000,
+  "computed_r_min": 37.699012
+}
