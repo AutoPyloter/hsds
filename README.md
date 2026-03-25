@@ -6,6 +6,7 @@
 [![Python](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue)](https://www.python.org)
 [![Tests](https://img.shields.io/badge/tests-325%20passed-brightgreen)](#testing)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![codecov](https://codecov.io/github/AutoPyloter/harmonix/graph/badge.svg?token=H93FEVMFLS)](https://codecov.io/github/AutoPyloter/harmonix)
 
 **Harmony Search optimisation with dependent variable spaces and engineering domain catalogues.**
 
