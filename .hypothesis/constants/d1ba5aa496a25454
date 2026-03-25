@@ -1,0 +1,4 @@
+# file: C:\Users\ASUS\Documents\GitHub\harmonix\harmonix\spaces\__init__.py
+# hypothesis_version: 6.151.9
+
+['ACIDoubleRebar', 'ACIRebar', 'ConcreteGrade', 'Fibonacci', 'NaturalNumber', 'NegativeInt', 'NegativeReal', 'PositiveReal', 'PowerOfTwo', 'PrimeVariable', 'SectionProperties', 'SeismicZone', 'SeismicZoneTBDY', 'SoilProfile', 'SoilSPT', 'SteelSection', 'WholeNumber']

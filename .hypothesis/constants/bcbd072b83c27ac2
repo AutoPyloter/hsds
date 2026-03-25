@@ -1,0 +1,4 @@
+# file: C:\Users\ASUS\Documents\GitHub\harmonix\harmonix\spaces\math.py
+# hypothesis_version: 6.151.9
+
+[-1000000.0, -1e-09, 1e-09, 0.05, 0.5, 1000000.0, -100, 'fibonacci', 'natural', 'negative_int', 'negative_real', 'positive_real', 'power_of_two', 'prime', 'whole']
