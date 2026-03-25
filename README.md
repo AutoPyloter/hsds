@@ -12,6 +12,7 @@
   <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json&style=flat-square" alt="Ruff"></a>
   <a href="https://mypy-lang.org/"><img src="https://www.mypy-lang.org/static/mypy_badge.svg?style=flat-square" alt="Checked with mypy"></a>
   <a href="https://github.com/pre-commit/pre-commit"><img src="https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white&style=flat-square" alt="pre-commit"></a>
+  <a href="https://github.com/AutoPyloter/harmonix/network/updates"><img src="https://img.shields.io/badge/Dependabot-enabled-blue?logo=dependabot&style=flat-square" alt="Dependabot"></a>
   <br>
 
   <a href="https://pepy.tech/project/harmonix-opt"><img src="https://static.pepy.tech/badge/harmonix-opt/month?style=flat-square" alt="Downloads/Month"></a>
