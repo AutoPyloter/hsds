@@ -7,6 +7,7 @@
 [![Tests](https://img.shields.io/badge/tests-325%20passed-brightgreen)](#testing)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![codecov](https://codecov.io/github/AutoPyloter/harmonix/graph/badge.svg?token=H93FEVMFLS)](https://codecov.io/github/AutoPyloter/harmonix)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
 **Harmony Search optimisation with dependent variable spaces and engineering domain catalogues.**
 
