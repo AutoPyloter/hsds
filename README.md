@@ -5,7 +5,7 @@
   <a href="https://www.python.org"><img src="https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue?style=flat-square" alt="Python Versions"></a>
   <a href="https://pypi.org/project/harmonix-opt/"><img src="https://img.shields.io/pypi/wheel/harmonix-opt?style=flat-square&color=blue" alt="PyPI Wheel"></a>
   <br>
-  
+
   <a href="https://github.com/AutoPyloter/harmonix/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/AutoPyloter/harmonix/ci.yml?branch=main&label=CI&style=flat-square" alt="CI Status"></a>
   <a href="#testing"><img src="https://img.shields.io/badge/tests-325%20passed-brightgreen?style=flat-square" alt="Tests"></a>
   <a href="https://codecov.io/github/AutoPyloter/harmonix"><img src="https://codecov.io/github/AutoPyloter/harmonix/graph/badge.svg?token=H93FEVMFLS&style=flat-square" alt="Codecov"></a>
