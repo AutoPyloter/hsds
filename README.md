@@ -19,6 +19,7 @@
   <a href="https://github.com/AutoPyloter/harmonix/stargazers"><img src="https://img.shields.io/github/stars/AutoPyloter/harmonix?style=social" alt="GitHub Repo stars"></a>
   <a href="https://github.com/AutoPyloter/harmonix/commits/main"><img src="https://img.shields.io/github/last-commit/AutoPyloter/harmonix?style=flat-square" alt="Last Commit"></a>
   <a href="http://makeapullrequest.com"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square" alt="PRs Welcome"></a>
+  <a href="https://www.repostatus.org/#active"><img src="https://img.shields.io/badge/Project_Status-Active-brightgreen?style=flat-square" alt="Project Status: Active"></a>
   <br>
 
   <a href="https://doi.org/10.5281/zenodo.19160019"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.19160019.svg?style=flat-square" alt="DOI"></a>
