@@ -15,6 +15,7 @@
   <a href="https://github.com/AutoPyloter/harmonix/network/updates"><img src="https://img.shields.io/badge/Dependabot-enabled-blue?logo=dependabot&style=flat-square" alt="Dependabot"></a>
   <a href="https://peps.python.org/pep-0561/"><img src="https://img.shields.io/badge/types-PEP_561-blue.svg?style=flat-square" alt="PEP 561"></a>
   <a href="https://libraries.io/pypi/harmonix-opt"><img src="https://img.shields.io/librariesio/release/pypi/harmonix-opt?style=flat-square" alt="Dependencies"></a>
+  [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=AutoPyloter_harmonix&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=AutoPyloter_harmonix)
   <br>
 
   <a href="https://pepy.tech/project/harmonix-opt"><img src="https://static.pepy.tech/badge/harmonix-opt/month?style=flat-square" alt="Downloads/Month"></a>
