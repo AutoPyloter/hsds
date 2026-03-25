@@ -16,6 +16,7 @@ import pytest
 from harmonix.pareto import (
     ArchiveEntry,
     ParetoArchive,
+    ParetoResult,
     crowding_distances,
     dominates,
     non_dominated_front,
@@ -166,7 +167,7 @@ class TestParetoArchive:
         arch.add({"x": 2}, (1.0, 0.0))
         # Tournament of all 3 should return an endpoint (inf distance)
         entry = arch.crowding_tournament(k=3)
-        assert math.isinf(0.0) or entry.objectives in [(0.0, 1.0), (1.0, 0.0)]
+        assert entry.objectives in [(0.0, 1.0), (1.0, 0.0)]
 
     def test_serialization_roundtrip(self):
         arch = ParetoArchive(max_size=10)
@@ -198,3 +199,81 @@ class TestArchiveEntry:
         entry = ArchiveEntry(harmony={"x": 1.0}, objectives=(0.5, 0.7))
         assert entry.harmony == {"x": 1.0}
         assert entry.objectives == (0.5, 0.7)
+
+
+# ---------------------------------------------------------------------------
+# crowding_distances — missing edge cases
+# ---------------------------------------------------------------------------
+
+
+class TestCrowdingDistancesSingleElement:
+    def test_single_solution_gets_inf(self):
+        dists = crowding_distances([(3.0, 7.0)])
+        assert len(dists) == 1
+        assert math.isinf(dists[0])
+
+    def test_all_same_objective_value(self):
+        """span=0 → skip interior loop; boundaries still get inf."""
+        vecs = [(1.0, 0.0), (1.0, 0.5), (1.0, 1.0)]
+        dists = crowding_distances(vecs)
+        # f1 span=0 → no contribution; f2 boundaries get inf
+        assert math.isinf(dists[0]) or math.isinf(dists[2])
+
+
+# ---------------------------------------------------------------------------
+# ParetoArchive — missing edge cases
+# ---------------------------------------------------------------------------
+
+
+class TestParetoArchiveEdgeCases:
+    def test_max_size_one_keeps_best(self):
+        arch = ParetoArchive(max_size=1)
+        arch.add({"x": 0}, (1.0, 1.0))
+        arch.add({"x": 1}, (0.5, 0.5))  # dominates previous
+        assert len(arch) == 1
+        assert arch.entries[0].objectives == (0.5, 0.5)
+
+    def test_max_size_one_with_non_dominated_pair_keeps_one(self):
+        arch = ParetoArchive(max_size=1)
+        arch.add({"x": 0}, (0.0, 1.0))
+        arch.add({"x": 1}, (1.0, 0.0))  # non-dominated → triggers prune
+        assert len(arch) == 1
+
+    def test_all_boundary_solutions_prune_does_not_crash(self):
+        """When all crowding distances are inf, prune picks randomly — must not crash."""
+        arch = ParetoArchive(max_size=2)
+        # Three mutually non-dominated points → one will be pruned
+        arch.add({"x": 0}, (0.0, 2.0))
+        arch.add({"x": 1}, (1.0, 1.0))
+        arch.add({"x": 2}, (2.0, 0.0))
+        assert len(arch) == 2
+
+
+# ---------------------------------------------------------------------------
+# ParetoResult — repr
+# ---------------------------------------------------------------------------
+
+
+class TestParetoResult:
+    def _make_result(self, n_front):
+        front = [ArchiveEntry(harmony={"x": i}, objectives=(float(i), float(10 - i))) for i in range(n_front)]
+        return ParetoResult(front=front, archive_history=[1] * 10, iterations=10, elapsed_seconds=0.1)
+
+    def test_repr_contains_front_size(self):
+        r = self._make_result(3)
+        assert "3" in repr(r)
+
+    def test_repr_empty_front(self):
+        r = ParetoResult(front=[], archive_history=[], iterations=0, elapsed_seconds=0.0)
+        text = repr(r)
+        assert "0" in text  # front size = 0
+
+    def test_repr_more_than_five_entries_shows_ellipsis(self):
+        r = self._make_result(8)
+        text = repr(r)
+        assert "more" in text  # "… and 3 more"
+
+    def test_repr_five_or_fewer_no_ellipsis(self):
+        r = self._make_result(4)
+        text = repr(r)
+        assert "more" not in text

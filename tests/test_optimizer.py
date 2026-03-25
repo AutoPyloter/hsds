@@ -307,9 +307,7 @@ class TestMultiObjective:
         for i, a in enumerate(objectives):
             for j, b in enumerate(objectives):
                 if i != j:
-                    assert not dominates(a, b) or not dominates(b, a), (
-                        f"Solution {i} and {j} should not both dominate each other"
-                    )
+                    assert not dominates(b, a), f"Solution {j} {b} dominates solution {i} {a} in Pareto front"
 
     def test_archive_history_length(self):
         space = self._zdt1_space()
@@ -367,3 +365,49 @@ class TestMultiObjective:
         errors = [abs(e.objectives[1] - (1.0 - math.sqrt(max(0.0, e.objectives[0])))) for e in result.front]
         mean_err = sum(errors) / len(errors) if errors else 999
         assert mean_err < 0.05, f"Mean ZDT1 front error too large: {mean_err:.4f}"
+
+    def test_use_cache_true_does_not_change_result_type(self):
+        """MultiObjective ile use_cache=True birlikte çalışmalı, ParetoResult dönmeli."""
+        space = self._zdt1_space(n=2)
+        result = MultiObjective(space, lambda h: self._zdt1_obj(h, n=2)).optimize(
+            memory_size=8,
+            max_iter=50,
+            archive_size=20,
+            use_cache=True,
+        )
+        assert isinstance(result, ParetoResult)
+        assert len(result.front) > 0
+
+    def test_three_objective_problem(self):
+        """3 amaçlı problemi işleyebilmeli."""
+        space = DesignSpace()
+        for i in range(3):
+            space.add(f"x{i}", Continuous(0.0, 1.0))
+
+        def tri_obj(h):
+            return (h["x0"], h["x1"], h["x2"]), 0.0
+
+        result = MultiObjective(space, tri_obj).optimize(memory_size=10, max_iter=50, archive_size=20)
+        assert isinstance(result, ParetoResult)
+        assert all(len(e.objectives) == 3 for e in result.front)
+
+
+# ---------------------------------------------------------------------------
+# Maximization — constraint handling
+# ---------------------------------------------------------------------------
+
+
+class TestMaximizationConstraints:
+    def test_feasible_solution_found_with_constraint(self):
+        """Maximization'da feasible çözüm bulunmalı (penalty > 0 olan çözümler elenmeli)."""
+        space = DesignSpace()
+        space.add("x", Continuous(0.0, 10.0))
+
+        def obj(h):
+            # Constraint: x >= 4.0
+            penalty = max(0.0, 4.0 - h["x"])
+            return h["x"], penalty
+
+        result = Maximization(space, obj).optimize(memory_size=10, max_iter=500)
+        assert result.best_penalty <= 0
+        assert result.best_harmony["x"] >= 3.9

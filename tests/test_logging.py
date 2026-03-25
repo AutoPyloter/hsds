@@ -150,6 +150,26 @@ class TestEvaluationCache:
         opt.optimize(memory_size=5, max_iter=20)
         assert opt._cache is None
 
+    def test_stats_with_zero_evaluations(self):
+        """Henüz hiç çağrı yapılmadan stats() sıfıra bölme hatası vermemeli."""
+        cache = EvaluationCache(lambda h: (h["x"], 0.0), maxsize=10)
+        s = cache.stats()
+        assert "0%" in s or "hit" in s.lower()
+
+    def test_eviction_preserves_exact_maxsize(self):
+        """maxsize=3 ile 4 farklı değer eklendikten sonra size==3 kalmalı."""
+        count = [0]
+
+        def obj(h):
+            count[0] += 1
+            return h["x"], 0.0
+
+        cache = EvaluationCache(obj, maxsize=3)
+        for x in [1.0, 2.0, 3.0, 4.0]:
+            cache({"x": x})
+        assert cache.size == 3
+        assert count[0] == 4  # hepsi miss
+
 
 # ---------------------------------------------------------------------------
 # RunLogger
