@@ -335,6 +335,12 @@ class TestACIDoubleRebar:
         code = var.sample({})
         assert "double row" in var.describe(code)
 
+    def test_neighbor_returns_same_value_when_no_adjacent_valid_codes(self, monkeypatch):
+        var = ACIDoubleRebar(d1_expr=0.55, d2_expr=0.48, cc_expr=40.0)
+        code = var.sample({})
+        monkeypatch.setattr(var, "_valid_codes", lambda ctx: [code])
+        assert var.neighbor(code, {}) == code
+
 
 class TestSteelSection:
     def test_sample_valid_index(self):
@@ -512,6 +518,11 @@ class TestSoilSPT:
             p = var.decode(idx)
             assert p.site_class in ("ZC", "ZD")
 
+    def test_filter_removes_out_of_range(self):
+        var = SoilSPT()
+        result = var.filter([-1, 999, var._indices[0]], {})
+        assert result == [var._indices[0]]
+
     def test_no_match_raises(self):
         with pytest.raises(ValueError):
             SoilSPT(site_classes=["ZA"], N_min=200, N_max=201)
@@ -547,6 +558,11 @@ class TestSeismicZoneTBDY:
         for idx in var._indices:
             z = var.decode(idx)
             assert z.site_class == "ZC"
+
+    def test_filter_removes_out_of_range(self):
+        var = SeismicZoneTBDY()
+        result = var.filter([-1, 999, var._indices[0]], {})
+        assert result == [var._indices[0]]
 
     def test_no_match_raises(self):
         with pytest.raises(ValueError):
