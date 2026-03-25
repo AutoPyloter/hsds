@@ -17,6 +17,7 @@
 [![GitHub issues](https://img.shields.io/github/issues/AutoPyloter/harmonix)](https://github.com/AutoPyloter/harmonix/issues)
 [![GitHub repo size](https://img.shields.io/github/repo-size/AutoPyloter/harmonix)]()
 [![Checked with mypy](https://www.mypy-lang.org/static/mypy_badge.svg)](https://mypy-lang.org/)
+[![Sourcery](https://img.shields.io/badge/Sourcery-enabled-brightgreen)](https://sourcery.ai)
 
 **Harmony Search optimisation with dependent variable spaces and engineering domain catalogues.**
 
