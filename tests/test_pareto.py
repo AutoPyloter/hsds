@@ -159,6 +159,10 @@ class TestParetoArchive:
         arch = ParetoArchive(max_size=10)
         assert arch.random_entry() is None
 
+    def test_crowding_tournament_none_when_empty(self):
+        arch = ParetoArchive(max_size=10)
+        assert arch.crowding_tournament() is None
+
     def test_crowding_tournament_returns_least_crowded(self):
         arch = ParetoArchive(max_size=10)
         # Add 3 points: endpoints have inf distance, middle is finite

@@ -83,6 +83,13 @@ class TestWholeNumber:
         v = WholeNumber(hi=5)
         assert v.filter([-1, 0, 3, 6], {}) == [0, 3]
 
+    def test_neighbor_clamps_at_bounds(self):
+        v = WholeNumber(hi=5)
+        for _ in range(20):
+            assert v.neighbor(0, {}) in {0, 1}
+        for _ in range(20):
+            assert v.neighbor(5, {}) in {4, 5}
+
 
 class TestNegativeInt:
     def test_all_negative(self):
@@ -97,6 +104,13 @@ class TestNegativeInt:
     def test_filter(self):
         v = NegativeInt(lo=-5)
         assert v.filter([-6, -5, -1, 0, 1], {}) == [-5, -1]
+
+    def test_neighbor_clamps_at_bounds(self):
+        v = NegativeInt(lo=-5)
+        for _ in range(20):
+            assert v.neighbor(-5, {}) in {-5, -4}
+        for _ in range(20):
+            assert v.neighbor(-1, {}) in {-2, -1}
 
 
 class TestNegativeReal:
@@ -190,6 +204,10 @@ class TestPowerOfTwo:
         nb = v.neighbor(8, {})
         assert nb in {4, 16}
 
+    def test_filter_keeps_only_valid_powers(self):
+        v = PowerOfTwo(hi=64)
+        assert v.filter([1, 2, 3, 4, 5, 64, 65], {}) == [1, 2, 4, 64]
+
     def test_no_values_raises(self):
         with pytest.raises(ValueError):
             PowerOfTwo(lo=5, hi=6)  # no powers of two in [5,6]
@@ -211,6 +229,15 @@ class TestFibonacci:
         v = Fibonacci(hi=20)
         result = v.filter([1, 2, 4, 5, 7, 8], {})
         assert set(result) == {1, 2, 5, 8}
+
+    def test_neighbor_adjacent_fibonacci(self):
+        v = Fibonacci(hi=20)
+        nb = v.neighbor(5, {})
+        assert nb in {3, 8}
+
+    def test_no_values_raises(self):
+        with pytest.raises(ValueError):
+            Fibonacci(lo=4, hi=4)
 
     def test_invalid_neighbor_falls_back_to_sample(self, monkeypatch):
         v = Fibonacci(hi=20)
@@ -329,6 +356,13 @@ class TestACIDoubleRebar:
         var = ACIDoubleRebar(d1_expr=0.55, d2_expr=0.48, cc_expr=40.0)
         filtered = var.filter([-1, 999999], {})
         assert filtered == []
+
+    def test_neighbor_stays_valid(self):
+        var = ACIDoubleRebar(d1_expr=0.55, d2_expr=0.48, cc_expr=40.0)
+        code = var.sample({})
+        valid = set(var._valid_codes({}))
+        nb = var.neighbor(code, {})
+        assert nb in valid
 
     def test_describe(self):
         var = ACIDoubleRebar(d1_expr=0.55, d2_expr=0.48, cc_expr=40.0)

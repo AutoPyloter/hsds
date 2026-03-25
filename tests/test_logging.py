@@ -23,7 +23,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import pytest
 
-from harmonix.logging import EvaluationCache, RunLogger
+from harmonix.logging import EvaluationCache, RunLogger, _resolve_path
 from harmonix.optimizer import Minimization
 from harmonix.space import DesignSpace
 from harmonix.variables import Continuous
@@ -244,6 +244,11 @@ class TestRunLogger:
         logger.log_init([{"x": 1.0}], [1.0], [0.0])
         logger.log_evaluation(1, {"x": 1.0}, 1.0, 0.0)
         logger.log_iteration(1, {"x": 1.0}, 1.0, 0.0)
+
+
+class TestResolvePath:
+    def test_returns_none_when_no_explicit_and_no_checkpoint(self):
+        assert _resolve_path(None, None, "_history") is None
 
 
 # ---------------------------------------------------------------------------

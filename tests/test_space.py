@@ -60,6 +60,12 @@ class TestDesignSpaceConstruction:
         space.add("x", Continuous(0.0, 1.0))
         assert "x" in repr(space)
 
+    def test_iter_returns_variable_names(self):
+        space = DesignSpace()
+        space.add("x", Continuous(0.0, 1.0))
+        space.add("y", Continuous(0.0, 1.0))
+        assert list(iter(space)) == ["x", "y"]
+
     def test_chaining(self):
         space = DesignSpace().add("x", Continuous(0.0, 1.0)).add("y", Continuous(0.0, 1.0))
         assert len(space) == 2

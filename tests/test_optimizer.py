@@ -470,6 +470,30 @@ class TestMultiObjective:
         out = capsys.readouterr().out
         assert "[MO-HS] iter" in out
 
+    def test_multiobjective_verbose_prints_resume_message(self, tmp_path, capsys):
+        space = self._zdt1_space(n=2)
+        ckpt = tmp_path / "resume_mo.json"
+
+        MultiObjective(space, lambda h: self._zdt1_obj(h, n=2)).optimize(
+            memory_size=5,
+            max_iter=2,
+            checkpoint_path=ckpt,
+            checkpoint_every=2,
+            resume="new",
+        )
+        capsys.readouterr()
+
+        MultiObjective(space, lambda h: self._zdt1_obj(h, n=2)).optimize(
+            memory_size=5,
+            max_iter=4,
+            checkpoint_path=ckpt,
+            checkpoint_every=4,
+            resume="resume",
+            verbose=True,
+        )
+        out = capsys.readouterr().out
+        assert "[MO-HS] Resumed from checkpoint at iteration 2." in out
+
 
 # ---------------------------------------------------------------------------
 # Maximization — constraint handling

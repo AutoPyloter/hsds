@@ -198,11 +198,12 @@ class TestMakeVariable:
         EvenVar = make_variable(
             sample=lambda ctx: random.choice(VALS),
             filter=lambda cands, ctx: [c for c in cands if c in VALS],
-            neighbor=lambda val, ctx: val,
+            neighbor=lambda val, ctx: val + 2,
         )
         v = EvenVar()
         assert v.sample({}) in VALS
         assert v.filter([2, 3, 4, 5], {}) == [2, 4]
+        assert v.neighbor(2, {}) == 4
 
     def test_name_applied(self):
         MyVar = make_variable(
