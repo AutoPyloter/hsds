@@ -13,6 +13,7 @@
   <a href="https://mypy-lang.org/"><img src="https://www.mypy-lang.org/static/mypy_badge.svg?style=flat-square" alt="Checked with mypy"></a>
   <a href="https://github.com/pre-commit/pre-commit"><img src="https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white&style=flat-square" alt="pre-commit"></a>
   <a href="https://github.com/AutoPyloter/harmonix/network/updates"><img src="https://img.shields.io/badge/Dependabot-enabled-blue?logo=dependabot&style=flat-square" alt="Dependabot"></a>
+  <a href="https://peps.python.org/pep-0561/"><img src="https://img.shields.io/badge/types-PEP_561-blue.svg?style=flat-square" alt="PEP 561"></a>
   <br>
 
   <a href="https://pepy.tech/project/harmonix-opt"><img src="https://static.pepy.tech/badge/harmonix-opt/month?style=flat-square" alt="Downloads/Month"></a>
