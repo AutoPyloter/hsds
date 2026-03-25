@@ -1,27 +1,27 @@
 # harmonix
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19160019.svg)](https://doi.org/10.5281/zenodo.19160019)
-[![PyPI](https://img.shields.io/pypi/v/harmonix-opt)](https://pypi.org/project/harmonix-opt/)
-[![CI](https://github.com/AutoPyloter/harmonix/actions/workflows/ci.yml/badge.svg)](https://github.com/AutoPyloter/harmonix/actions/workflows/ci.yml)
-[![Python](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue)](https://www.python.org)
-[![Tests](https://img.shields.io/badge/tests-325%20passed-brightgreen)](#testing)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![codecov](https://codecov.io/github/AutoPyloter/harmonix/graph/badge.svg?token=H93FEVMFLS)](https://codecov.io/github/AutoPyloter/harmonix)
-[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
-[![Downloads](https://static.pepy.tech/badge/harmonix-opt)](https://pepy.tech/project/harmonix-opt)
-[![Downloads](https://static.pepy.tech/badge/harmonix-opt/month)](https://pepy.tech/project/harmonix-opt)
-[![PyPI Downloads](https://img.shields.io/pypi/dm/harmonix-opt.svg)](https://pypi.org/project/harmonix-opt/)
-[![GitHub Repo stars](https://img.shields.io/github/stars/AutoPyloter/harmonix?style=social)](https://github.com/AutoPyloter/harmonix/stargazers)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
-[![GitHub last commit](https://img.shields.io/github/last-commit/AutoPyloter/harmonix)](https://github.com/AutoPyloter/harmonix/commits/main)
-[![GitHub issues](https://img.shields.io/github/issues/AutoPyloter/harmonix)](https://github.com/AutoPyloter/harmonix/issues)
-[![GitHub repo size](https://img.shields.io/github/repo-size/AutoPyloter/harmonix)]()
-[![Checked with mypy](https://www.mypy-lang.org/static/mypy_badge.svg)](https://mypy-lang.org/)
-[![Sourcery](https://img.shields.io/badge/Sourcery-enabled-brightgreen)](https://sourcery.ai)
-[![PyPI - Wheel](https://img.shields.io/pypi/wheel/harmonix-opt)](https://pypi.org/project/harmonix-opt/)
-[![OS - Windows](https://img.shields.io/badge/OS-Windows-blue?logo=windows)](#)
-[![OS - Linux](https://img.shields.io/badge/OS-Linux-blue?logo=linux)](#)
-[![OS - macOS](https://img.shields.io/badge/OS-macOS-blue?logo=apple)](#)
+<p align="left">
+  <a href="https://pypi.org/project/harmonix-opt/"><img src="https://img.shields.io/pypi/v/harmonix-opt?style=flat-square&color=blue" alt="PyPI Version"></a>
+  <a href="https://www.python.org"><img src="https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue?style=flat-square" alt="Python Versions"></a>
+  <a href="https://pypi.org/project/harmonix-opt/"><img src="https://img.shields.io/pypi/wheel/harmonix-opt?style=flat-square&color=blue" alt="PyPI Wheel"></a>
+  <br>
+  
+  <a href="https://github.com/AutoPyloter/harmonix/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/AutoPyloter/harmonix/ci.yml?branch=main&style=flat-square" alt="CI Status"></a>
+  <a href="#testing"><img src="https://img.shields.io/badge/tests-325%20passed-brightgreen?style=flat-square" alt="Tests"></a>
+  <a href="https://codecov.io/github/AutoPyloter/harmonix"><img src="https://codecov.io/github/AutoPyloter/harmonix/graph/badge.svg?token=H93FEVMFLS&style=flat-square" alt="Codecov"></a>
+  <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json&style=flat-square" alt="Ruff"></a>
+  <a href="https://mypy-lang.org/"><img src="https://www.mypy-lang.org/static/mypy_badge.svg?style=flat-square" alt="Checked with mypy"></a>
+  <br>
+
+  <a href="https://pepy.tech/project/harmonix-opt"><img src="https://static.pepy.tech/badge/harmonix-opt/month?style=flat-square" alt="Downloads/Month"></a>
+  <a href="https://github.com/AutoPyloter/harmonix/stargazers"><img src="https://img.shields.io/github/stars/AutoPyloter/harmonix?style=social" alt="GitHub Repo stars"></a>
+  <a href="https://github.com/AutoPyloter/harmonix/commits/main"><img src="https://img.shields.io/github/last-commit/AutoPyloter/harmonix?style=flat-square" alt="Last Commit"></a>
+  <a href="http://makeapullrequest.com"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square" alt="PRs Welcome"></a>
+  <br>
+
+  <a href="https://doi.org/10.5281/zenodo.19160019"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.19160019.svg?style=flat-square" alt="DOI"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg?style=flat-square" alt="License: MIT"></a>
+</p>
 
 **Harmony Search optimisation with dependent variable spaces and engineering domain catalogues.**
 
