@@ -1,0 +1,17 @@
+name: Sourcery Code Review
+
+on:
+  pull_request:
+    paths:
+      - "**.py"
+
+jobs:
+  sourcery:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Sourcery Action
+        uses: sourcery-ai/action@v1
+        with:
+          token: ${{ secrets.SOURCERY_TOKEN }}
