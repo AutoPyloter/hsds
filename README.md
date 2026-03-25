@@ -15,6 +15,7 @@
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
 [![GitHub last commit](https://img.shields.io/github/last-commit/AutoPyloter/harmonix)](https://github.com/AutoPyloter/harmonix/commits/main)
 [![GitHub issues](https://img.shields.io/github/issues/AutoPyloter/harmonix)](https://github.com/AutoPyloter/harmonix/issues)
+[![GitHub repo size](https://img.shields.io/github/repo-size/AutoPyloter/harmonix)]()
 
 **Harmony Search optimisation with dependent variable spaces and engineering domain catalogues.**
 
