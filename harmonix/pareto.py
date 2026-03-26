@@ -102,7 +102,7 @@ def crowding_distances(
 
     for m in range(n_obj):
         # Sort by objective m
-        order = sorted(range(n), key=lambda i: objective_vectors[i][m])
+        order = sorted(range(n), key=lambda i, objective_index=m: objective_vectors[i][objective_index])
         f_min = objective_vectors[order[0]][m]
         f_max = objective_vectors[order[-1]][m]
         span = f_max - f_min

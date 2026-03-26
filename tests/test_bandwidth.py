@@ -159,7 +159,7 @@ class TestContinuousNeighborBw:
         v = Continuous(0.0, 10.0)
         # With bw=0 sigma=0, gauss(0,0) = 0 deterministically
         nb = v.neighbor(5.0, {"__bw__": 0.0})
-        assert nb == 5.0
+        assert nb == pytest.approx(5.0)
 
     def test_neighbor_always_in_bounds_with_large_bw(self):
         """Even with very large bw, result must stay in [lo, hi]."""

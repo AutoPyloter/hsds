@@ -73,7 +73,7 @@ def welded_beam(h):
 
     sigma = 6 * P * L / (b * t**2)
     delta = 4 * P * L**3 / (E * t**3 * b)
-    P_c = 4.013 * E * math.sqrt(t**2 * b**6 / 36) / L**2 * (1 - t / (2 * L) * math.sqrt(E / (4 * G)))
+    critical_buckling_load = 4.013 * E * math.sqrt(t**2 * b**6 / 36) / L**2 * (1 - t / (2 * L) * math.sqrt(E / (4 * G)))
     cost = 1.10471 * h_v**2 * l + 0.04811 * t * b * (14 + l)
 
     violations = [
@@ -83,7 +83,7 @@ def welded_beam(h):
         0.10471 * h_v**2 + 0.04811 * t * b * (14 + l) - 5.0,
         0.125 - h_v,
         delta - DELTA_MAX,
-        P - P_c,
+        P - critical_buckling_load,
     ]
     penalty = sum(max(0.0, g) for g in violations)
     return cost, penalty
@@ -103,4 +103,4 @@ if __name__ == "__main__":
 
     print(result)
     print("Known near-optimal cost: ~1.724")
-    print(f"Gap to known optimum:    " f"{abs(result.best_fitness - 1.724) / 1.724 * 100:.1f}%")
+    print(f"Gap to known optimum:    {abs(result.best_fitness - 1.724) / 1.724 * 100:.1f}%")

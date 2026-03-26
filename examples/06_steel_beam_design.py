@@ -80,31 +80,31 @@ def objective(harmony):
     sec = section_var.decode(idx)
 
     # Convert catalogue values to SI base units
-    Wy_m3 = sec.Wy_cm3 * 1e-6  # cm³ → m³
-    Iz_m4 = sec.Iy_cm4 * 1e-8  # cm⁴ → m⁴  (strong axis = Iy in catalogue)
+    wy_m3 = sec.Wy_cm3 * 1e-6  # cm³ → m³
+    iz_m4 = sec.Iy_cm4 * 1e-8  # cm⁴ → m⁴  (strong axis = Iy in catalogue)
     tw_m = sec.tw_mm * 1e-3  # mm  → m
     h_m = sec.h_mm * 1e-3  # mm  → m
 
-    fy_kPa = fy * 1e3  # MPa → kPa (= kN/m²)
-    E_kPa = E * 1e3  # MPa → kPa
+    fy_kpa = fy * 1e3  # MPa → kPa (= kN/m²)
+    e_kpa = E * 1e3  # MPa → kPa
 
     # 1. Bending capacity [kN·m]
-    M_Rd = phi * Wy_m3 * fy_kPa
+    m_rd = phi * wy_m3 * fy_kpa
 
     # 2. Shear capacity — shear area ≈ h × tw  (simplified)
-    Av = h_m * tw_m  # [m²]
-    V_Rd = phi * Av * fy_kPa / math.sqrt(3)
+    av = h_m * tw_m  # [m²]
+    v_rd = phi * av * fy_kpa / math.sqrt(3)
 
     # 3. Deflection at midspan (elastic, simply supported UDL)
     #    δ = 5 w L⁴ / (384 E I)
-    w_s_kPa = w_s  # [kN/m] — already per unit length
-    delta = 5 * w_s_kPa * L**4 / (384 * E_kPa * Iz_m4)  # [m]
+    w_s_kpa = w_s  # [kN/m] — already per unit length
+    delta = 5 * w_s_kpa * L**4 / (384 * e_kpa * iz_m4)  # [m]
     delta_lim = L / 300
 
     # Penalties (sum of violations)
     penalty = 0.0
-    penalty += max(0.0, M_Ed - M_Rd)  # bending
-    penalty += max(0.0, V_Ed - V_Rd)  # shear
+    penalty += max(0.0, M_Ed - m_rd)  # bending
+    penalty += max(0.0, V_Ed - v_rd)  # shear
     penalty += max(0.0, delta - delta_lim) * 1e4  # deflection (scaled)
 
     # Objective: total beam weight [kg]
@@ -135,25 +135,25 @@ if __name__ == "__main__":
     idx = result.best_harmony["section"]
     sec = section_var.decode(idx)
 
-    Wy_m3 = sec.Wy_cm3 * 1e-6
-    Iz_m4 = sec.Iy_cm4 * 1e-8
+    wy_m3 = sec.Wy_cm3 * 1e-6
+    iz_m4 = sec.Iy_cm4 * 1e-8
     tw_m = sec.tw_mm * 1e-3
     h_m = sec.h_mm * 1e-3
-    fy_kPa = fy * 1e3
-    E_kPa = E * 1e3
+    fy_kpa = fy * 1e3
+    e_kpa = E * 1e3
 
-    M_Rd = Wy_m3 * fy_kPa
-    Av = h_m * tw_m
-    V_Rd = Av * fy_kPa / math.sqrt(3)
-    delta = 5 * w_s * L**4 / (384 * E_kPa * Iz_m4)
+    m_rd = wy_m3 * fy_kpa
+    av = h_m * tw_m
+    v_rd = av * fy_kpa / math.sqrt(3)
+    delta = 5 * w_s * L**4 / (384 * e_kpa * iz_m4)
 
     print(f"\nSelected section : {sec.name}")
     print(f"Series           : {sec.series}")
-    print(f"Mass             : {sec.mass_kg_m:.1f} kg/m  →  " f"total {sec.mass_kg_m * L:.1f} kg")
+    print(f"Mass             : {sec.mass_kg_m:.1f} kg/m  →  total {sec.mass_kg_m * L:.1f} kg")
     print("\nCapacity checks:")
-    print(f"  Bending : M_Ed = {M_Ed:.1f} kN·m  ≤  M_Rd = {M_Rd:.1f} kN·m  " f"{'✓' if M_Ed <= M_Rd else '✗'}")
-    print(f"  Shear   : V_Ed = {V_Ed:.1f} kN    ≤  V_Rd = {V_Rd:.1f} kN    " f"{'✓' if V_Ed <= V_Rd else '✗'}")
-    print(f"  Deflect : δ = {delta*1000:.1f} mm  ≤  L/300 = {L/300*1000:.1f} mm  " f"{'✓' if delta <= L/300 else '✗'}")
+    print(f"  Bending : M_Ed = {M_Ed:.1f} kN·m  ≤  M_Rd = {m_rd:.1f} kN·m  {'✓' if M_Ed <= m_rd else '✗'}")
+    print(f"  Shear   : V_Ed = {V_Ed:.1f} kN    ≤  V_Rd = {v_rd:.1f} kN    {'✓' if V_Ed <= v_rd else '✗'}")
+    print(f"  Deflect : δ = {delta*1000:.1f} mm  ≤  L/300 = {L/300*1000:.1f} mm  {'✓' if delta <= L/300 else '✗'}")
     print("\nSection properties:")
     print(f"  h = {sec.h_mm:.0f} mm,  b = {sec.b_mm:.0f} mm")
-    print(f"  A = {sec.A_cm2:.1f} cm²,  Iy = {sec.Iy_cm4:.0f} cm⁴,  " f"Wy = {sec.Wy_cm3:.0f} cm³")
+    print(f"  A = {sec.A_cm2:.1f} cm²,  Iy = {sec.Iy_cm4:.0f} cm⁴,  Wy = {sec.Wy_cm3:.0f} cm³")

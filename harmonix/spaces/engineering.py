@@ -503,15 +503,15 @@ class SectionProperties:
         Flange thickness [mm].
     tw_mm : float
         Web thickness [mm].
-    A_cm2 : float
+    a_cm2 : float
         Cross-sectional area [cm²].
-    Iy_cm4 : float
+    iy_cm4 : float
         Second moment of area about the strong axis [cm⁴].
-    Wy_cm3 : float
+    wy_cm3 : float
         Elastic section modulus about the strong axis [cm³].
-    Iz_cm4 : float
+    iz_cm4 : float
         Second moment of area about the weak axis [cm⁴].
-    Wz_cm3 : float
+    wz_cm3 : float
         Elastic section modulus about the weak axis [cm³].
     mass_kg_m : float
         Mass per unit length [kg/m].
@@ -523,12 +523,32 @@ class SectionProperties:
     b_mm: float
     tf_mm: float
     tw_mm: float
-    A_cm2: float
-    Iy_cm4: float
-    Wy_cm3: float
-    Iz_cm4: float
-    Wz_cm3: float
+    a_cm2: float
+    iy_cm4: float
+    wy_cm3: float
+    iz_cm4: float
+    wz_cm3: float
     mass_kg_m: float
+
+    @property
+    def A_cm2(self) -> float:
+        return self.a_cm2
+
+    @property
+    def Iy_cm4(self) -> float:
+        return self.iy_cm4
+
+    @property
+    def Wy_cm3(self) -> float:
+        return self.wy_cm3
+
+    @property
+    def Iz_cm4(self) -> float:
+        return self.iz_cm4
+
+    @property
+    def Wz_cm3(self) -> float:
+        return self.wz_cm3
 
 
 # ---------------------------------------------------------------------------
@@ -618,35 +638,51 @@ def _load_catalogue_from_file(path) -> List[SectionProperties]:
 
         [
           {"name": "IPE 200", "series": "IPE", "h_mm": 200, "b_mm": 100,
-           "tf_mm": 8.5, "tw_mm": 5.6, "A_cm2": 28.5, "Iy_cm4": 1940,
-           "Wy_cm3": 194, "Iz_cm4": 142, "Wz_cm3": 28.5, "mass_kg_m": 22.4}
+           "tf_mm": 8.5, "tw_mm": 5.6, "a_cm2": 28.5, "iy_cm4": 1940,
+           "wy_cm3": 194, "iz_cm4": 142, "wz_cm3": 28.5, "mass_kg_m": 22.4}
         ]
 
     CSV format — header row must contain the same field names.
     """
     p = Path(path)
+
+    def _normalize_section_row(row: dict) -> dict:
+        normalized = dict(row)
+        alias_map = {
+            "A_cm2": "a_cm2",
+            "Iy_cm4": "iy_cm4",
+            "Wy_cm3": "wy_cm3",
+            "Iz_cm4": "iz_cm4",
+            "Wz_cm3": "wz_cm3",
+        }
+        for legacy_key, snake_key in alias_map.items():
+            if legacy_key in normalized and snake_key not in normalized:
+                normalized[snake_key] = normalized.pop(legacy_key)
+        return normalized
+
     if p.suffix.lower() == ".json":
         data = json.loads(p.read_text())
-        return [SectionProperties(**row) for row in data]
+        return [SectionProperties(**_normalize_section_row(row)) for row in data]
     elif p.suffix.lower() == ".csv":
         with open(p, newline="") as f:
             reader = csv.DictReader(f)
             return [
                 SectionProperties(
-                    name=row["name"],
-                    series=row["series"],
-                    h_mm=float(row["h_mm"]),
-                    b_mm=float(row["b_mm"]),
-                    tf_mm=float(row["tf_mm"]),
-                    tw_mm=float(row["tw_mm"]),
-                    A_cm2=float(row["A_cm2"]),
-                    Iy_cm4=float(row["Iy_cm4"]),
-                    Wy_cm3=float(row["Wy_cm3"]),
-                    Iz_cm4=float(row["Iz_cm4"]),
-                    Wz_cm3=float(row["Wz_cm3"]),
-                    mass_kg_m=float(row["mass_kg_m"]),
+                    name=normalized_row["name"],
+                    series=normalized_row["series"],
+                    h_mm=float(normalized_row["h_mm"]),
+                    b_mm=float(normalized_row["b_mm"]),
+                    tf_mm=float(normalized_row["tf_mm"]),
+                    tw_mm=float(normalized_row["tw_mm"]),
+                    a_cm2=float(normalized_row["a_cm2"]),
+                    iy_cm4=float(normalized_row["iy_cm4"]),
+                    wy_cm3=float(normalized_row["wy_cm3"]),
+                    iz_cm4=float(normalized_row["iz_cm4"]),
+                    wz_cm3=float(normalized_row["wz_cm3"]),
+                    mass_kg_m=float(normalized_row["mass_kg_m"]),
                 )
                 for row in reader
+                for normalized_row in [_normalize_section_row(row)]
             ]
     else:
         raise ValueError(f"Unsupported catalogue format: {p.suffix!r}. Use .json or .csv")
@@ -676,7 +712,7 @@ class SteelSection(Variable):
     >>> var = SteelSection(series="IPE")
     >>> idx = var.sample({})
     >>> sec = var.decode(idx)
-    >>> print(sec.name, sec.Iy_cm4)
+    >>> print(sec.name, sec.iy_cm4)
 
     Using a custom catalogue file:
 
@@ -731,7 +767,7 @@ class SteelSection(Variable):
 
     def describe(self, index: int) -> str:
         s = self.decode(index)
-        return f"{s.name}  (A={s.A_cm2} cm², Iy={s.Iy_cm4} cm⁴, {s.mass_kg_m} kg/m)"
+        return f"{s.name}  (A={s.a_cm2} cm², Iy={s.iy_cm4} cm⁴, {s.mass_kg_m} kg/m)"
 
     @property
     def sections(self) -> List[SectionProperties]:
@@ -753,27 +789,47 @@ class ConcreteGradeProperties:
     ----------
     name : str
         Designation, e.g. ``"C30/37"``.
-    fck_MPa : float
+    fck_mpa : float
         Characteristic cylinder compressive strength [MPa].
-    fck_cube_MPa : float
+    fck_cube_mpa : float
         Characteristic cube compressive strength [MPa].
-    fcm_MPa : float
+    fcm_mpa : float
         Mean compressive strength (= fck + 8) [MPa].
-    fctm_MPa : float
+    fctm_mpa : float
         Mean tensile strength [MPa].
-    Ecm_GPa : float
+    ecm_gpa : float
         Secant modulus of elasticity [GPa].
     eps_cu : float
         Ultimate compressive strain [‰].
     """
 
     name: str
-    fck_MPa: float
-    fck_cube_MPa: float
-    fcm_MPa: float
-    fctm_MPa: float
-    Ecm_GPa: float
+    fck_mpa: float
+    fck_cube_mpa: float
+    fcm_mpa: float
+    fctm_mpa: float
+    ecm_gpa: float
     eps_cu: float
+
+    @property
+    def fck_MPa(self) -> float:
+        return self.fck_mpa
+
+    @property
+    def fck_cube_MPa(self) -> float:
+        return self.fck_cube_mpa
+
+    @property
+    def fcm_MPa(self) -> float:
+        return self.fcm_mpa
+
+    @property
+    def fctm_MPa(self) -> float:
+        return self.fctm_mpa
+
+    @property
+    def Ecm_GPa(self) -> float:
+        return self.ecm_gpa
 
 
 _CONCRETE_GRADES: List[ConcreteGradeProperties] = [
@@ -817,7 +873,7 @@ class ConcreteGrade(Variable):
     --------
     >>> var = ConcreteGrade(min_grade="C25/30", max_grade="C50/60")
     >>> idx = var.sample({})
-    >>> print(var.decode(idx).name, var.decode(idx).fck_MPa, "MPa")
+    >>> print(var.decode(idx).name, var.decode(idx).fck_mpa, "MPa")
     """
 
     def __init__(
@@ -850,7 +906,7 @@ class ConcreteGrade(Variable):
 
     def describe(self, index: int) -> str:
         g = self.decode(index)
-        return f"{g.name}  (fck={g.fck_MPa} MPa, Ecm={g.Ecm_GPa} GPa)"
+        return f"{g.name}  (fck={g.fck_mpa} MPa, Ecm={g.ecm_gpa} GPa)"
 
 
 # ===========================================================================
@@ -867,30 +923,46 @@ class SoilProfile:
     ----------
     name : str
         Profile label, e.g. ``"Medium dense sand"``.
-    N_lo : int
+    n_lo : int
         Lower bound SPT-N blow count (blows / 300 mm).
-    N_hi : int
+    n_hi : int
         Upper bound SPT-N blow count.
     site_class : str
         TBDY 2018 / ASCE 7 site class (ZA … ZE / A … E).
     phi_deg : float
         Estimated friction angle [degrees] (granular soils).
-    cu_kPa : float
+    cu_kpa : float
         Estimated undrained shear strength [kPa] (cohesive soils; 0 if N/A).
-    Dr_pct : float
+    dr_pct : float
         Relative density estimate [%] (granular soils; 0 if N/A).
     vs30_mps : float
         Estimated shear-wave velocity Vs30 [m/s].
     """
 
     name: str
-    N_lo: int
-    N_hi: int
+    n_lo: int
+    n_hi: int
     site_class: str
     phi_deg: float
-    cu_kPa: float
-    Dr_pct: float
+    cu_kpa: float
+    dr_pct: float
     vs30_mps: float
+
+    @property
+    def N_lo(self) -> int:
+        return self.n_lo
+
+    @property
+    def N_hi(self) -> int:
+        return self.n_hi
+
+    @property
+    def cu_kPa(self) -> float:
+        return self.cu_kpa
+
+    @property
+    def Dr_pct(self) -> float:
+        return self.dr_pct
 
 
 _SOIL_PROFILES: List[SoilProfile] = [
@@ -924,7 +996,7 @@ class SoilSPT(Variable):
     site_classes : list[str] | None
         Restrict to specific TBDY / ASCE site classes,
         e.g. ``["ZC", "ZD"]``.  ``None`` = all classes.
-    N_min, N_max : int, optional
+    n_min, n_max : int, optional
         Additional SPT-N blow-count range filter.
 
     Examples
@@ -937,16 +1009,24 @@ class SoilSPT(Variable):
     def __init__(
         self,
         site_classes: Optional[List[str]] = None,
-        N_min: int = 0,
-        N_max: int = 9999,
+        n_min: int = 0,
+        n_max: int = 9999,
+        **legacy_kwargs,
     ):
+        if "N_min" in legacy_kwargs:
+            n_min = legacy_kwargs.pop("N_min")
+        if "N_max" in legacy_kwargs:
+            n_max = legacy_kwargs.pop("N_max")
+        if legacy_kwargs:
+            unexpected = ", ".join(sorted(legacy_kwargs))
+            raise TypeError(f"Unexpected keyword argument(s): {unexpected}")
         filtered = [
             p
             for p in _SOIL_PROFILES
-            if p.N_lo >= N_min and p.N_hi <= N_max and (site_classes is None or p.site_class in site_classes)
+            if p.n_lo >= n_min and p.n_hi <= n_max and (site_classes is None or p.site_class in site_classes)
         ]
         if not filtered:
-            raise ValueError(f"No soil profiles match site_classes={site_classes}, N_min={N_min}, N_max={N_max}.")
+            raise ValueError(f"No soil profiles match site_classes={site_classes}, n_min={n_min}, n_max={n_max}.")
         self._profiles = filtered
         self._indices = list(range(len(filtered)))
 
@@ -968,7 +1048,7 @@ class SoilSPT(Variable):
 
     def describe(self, index: int) -> str:
         p = self.decode(index)
-        return f"{p.name}  (N={p.N_lo}–{p.N_hi}, site class {p.site_class}, Vs30≈{p.vs30_mps} m/s)"
+        return f"{p.name}  (N={p.n_lo}–{p.n_hi}, site class {p.site_class}, Vs30≈{p.vs30_mps} m/s)"
 
 
 # ===========================================================================
@@ -990,12 +1070,12 @@ class SeismicZone:
         DD-3 (72 yr), DD-4 (43 yr).
     site_class : str
         TBDY site class ZA … ZE.
-    Ss : float
+    ss : float
         Short-period spectral acceleration [g] (0.2 s).
     S1 : float
         One-second spectral acceleration [g].
     SDS : float
-        Design short-period spectral acceleration = Fs·Ss [g].
+        Design short-period spectral acceleration = Fs·ss [g].
     SD1 : float
         Design 1-s spectral acceleration = F1·S1 [g].
     PGA : float
@@ -1005,15 +1085,19 @@ class SeismicZone:
     name: str
     hazard_level: str
     site_class: str
-    Ss: float
+    ss: float
     S1: float
     SDS: float
     SD1: float
     PGA: float
 
+    @property
+    def Ss(self) -> float:
+        return self.ss
+
 
 # Representative TBDY 2018 / AFAD TDTH grid (DD-2, 475-yr return period)
-# Ss and S1 values span the range of Turkey's seismic map; site amplification
+# ss and S1 values span the range of Turkey's seismic map; site amplification
 # factors Fs and F1 applied for each site class per TBDY 2018 Table 2.3-2.4.
 _SEISMIC_ZONES: List[SeismicZone] = [
     # ── ZA (rock, Vs30 > 1500 m/s) ─────────────────────────────────────────
@@ -1056,7 +1140,7 @@ class SeismicZoneTBDY(Variable):
 
     Each combination of hazard level, site class, and ground-motion
     intensity level is encoded as an index; use :meth:`decode` to
-    retrieve the full :class:`SeismicZone` with Ss, S1, SDS, SD1, PGA.
+    retrieve the full :class:`SeismicZone` with ss, S1, SDS, SD1, PGA.
 
     Parameters
     ----------

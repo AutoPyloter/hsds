@@ -87,21 +87,21 @@ def objective(h):
     if code is None:
         return 1e12, 1e6
 
-    A_s = steel_area(code)
+    steel_area_mm2 = steel_area(code)
 
     # ACI 318 β₁
     # Neutral axis depth [mm]
-    a = A_s * fy / (0.85 * fc * b)
+    a = steel_area_mm2 * fy / (0.85 * fc * b)
 
     # Nominal moment capacity [kN·m]
-    phi_Mn = 0.9 * A_s * fy * (d - a / 2) * 1e-6  # N·mm → kN·m
+    phi_mn = 0.9 * steel_area_mm2 * fy * (d - a / 2) * 1e-6  # N·mm → kN·m
 
     # Constraint: φMn ≥ Mu
-    penalty = max(0.0, Mu - phi_Mn)
+    penalty = max(0.0, Mu - phi_mn)
 
     # Cost: concrete volume (per unit span) + steel area
     total_height = d + cover
-    cost = COST_CONCRETE * b * total_height * 1e-6 + COST_STEEL * A_s * 1e-3
+    cost = COST_CONCRETE * b * total_height * 1e-6 + COST_STEEL * steel_area_mm2 * 1e-3
     return cost, penalty
 
 
@@ -127,12 +127,12 @@ if __name__ == "__main__":
     rebar_var = space["rebar"]
     if code is not None:
         dia, n = rebar_var.decode(code)
-        A_s = steel_area(code)
-        a = A_s * fy / (0.85 * fc * b)
-        phi_Mn = 0.9 * A_s * fy * (d - a / 2) * 1e-6
+        steel_area_mm2 = steel_area(code)
+        a = steel_area_mm2 * fy / (0.85 * fc * b)
+        phi_mn = 0.9 * steel_area_mm2 * fy * (d - a / 2) * 1e-6
 
         print(f"\nSection:   {b:.0f} mm × {d:.0f} mm")
         print(f"Rebar:     {rebar_var.describe(code)}")
-        print(f"A_s:       {A_s:.0f} mm²")
-        print(f"φMn:       {phi_Mn:.1f} kN·m  (demand: {Mu} kN·m)")
+        print(f"A_s:       {steel_area_mm2:.0f} mm²")
+        print(f"φMn:       {phi_mn:.1f} kN·m  (demand: {Mu} kN·m)")
         print(f"Penalty:   {result.best_penalty:.4f}")

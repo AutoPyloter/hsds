@@ -144,9 +144,7 @@ class TestDeterministicArtifacts:
             )
             eval_csv = ckpt.with_name(ckpt.stem + "_evals.csv")
             row = next(csv.DictReader(eval_csv.open()))
-            assert set(["wall_time_s", "iteration", "x", "y", "fitness", "penalty", "feasible"]).issubset(
-                set(row.keys())
-            )
+            assert {"wall_time_s", "iteration", "x", "y", "fitness", "penalty", "feasible"}.issubset(set(row.keys()))
             eval_csv.unlink()
         finally:
             ckpt.unlink(missing_ok=True)

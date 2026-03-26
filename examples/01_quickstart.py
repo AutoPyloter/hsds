@@ -52,4 +52,4 @@ result = optimizer.optimize(
 # --- 4. Inspect results ---------------------------------------------------
 
 print(result)
-print(f"x + y = {result.best_harmony['x'] + result.best_harmony['y']:.4f}  " f"(constraint: <= 4.0)")
+print(f"x + y = {result.best_harmony['x'] + result.best_harmony['y']:.4f}  (constraint: <= 4.0)")

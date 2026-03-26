@@ -105,11 +105,11 @@ def steel_area(code: int) -> float:
     return _AREAS_50[i] / 50.0 * _COUNTS[j]
 
 
-def moment_capacity(b, d, A_s, fc, fy) -> float:
+def moment_capacity(b, d, steel_area_mm2, fc, fy) -> float:
     """ACI 318 nominal moment capacity φMn [kN·m]."""
-    a = A_s * fy / (0.85 * fc * b)  # depth of stress block [mm]
-    phi_Mn = 0.9 * A_s * fy * (d - a / 2) * 1e-6  # N·mm → kN·m
-    return phi_Mn
+    a = steel_area_mm2 * fy / (0.85 * fc * b)  # depth of stress block [mm]
+    phi_mn = 0.9 * steel_area_mm2 * fy * (d - a / 2) * 1e-6  # N·mm → kN·m
+    return phi_mn
 
 
 # ---------------------------------------------------------------------------
@@ -128,19 +128,19 @@ def objective(h):
 
     grade = concrete_var.decode(grade_idx)
     fc = grade.fck_MPa
-    A_s = steel_area(code)
+    steel_area_mm2 = steel_area(code)
 
     # Moment capacity
-    phi_Mn = moment_capacity(b, d, A_s, fc, fy)
+    phi_mn = moment_capacity(b, d, steel_area_mm2, fc, fy)
 
     # Constraint: φMn ≥ Mu
-    penalty = max(0.0, Mu - phi_Mn)
+    penalty = max(0.0, Mu - phi_mn)
 
     # Cost
     unit_cost_concrete = _CONCRETE_COST.get(grade.name, 1.0)
     total_height = d + cover  # mm
     vol_concrete = b * total_height * 1e-6  # mm² → m²  (per m span)
-    cost = unit_cost_concrete * vol_concrete * L + COST_STEEL * A_s * 1e-3 * L
+    cost = unit_cost_concrete * vol_concrete * L + COST_STEEL * steel_area_mm2 * 1e-3 * L
 
     return cost, penalty
 
@@ -172,13 +172,13 @@ if __name__ == "__main__":
 
     grade = concrete_var.decode(grade_idx)
     fc = grade.fck_MPa
-    A_s = steel_area(code)
-    phi_Mn = moment_capacity(b, d, A_s, fc, fy)
+    steel_area_mm2 = steel_area(code)
+    phi_mn = moment_capacity(b, d, steel_area_mm2, fc, fy)
 
     print("\nOptimal design:")
-    print(f"  Concrete grade : {grade.name}  " f"(fck = {fc} MPa, Ecm = {grade.Ecm_GPa} GPa)")
+    print(f"  Concrete grade : {grade.name}  (fck = {fc} MPa, Ecm = {grade.Ecm_GPa} GPa)")
     print(f"  Section        : b = {b:.0f} mm × d = {d:.0f} mm")
-    print(f"  {rebar_var.describe(code)}  " f"(A_s = {A_s:.0f} mm²)")
+    print(f"  {rebar_var.describe(code)}  (A_s = {steel_area_mm2:.0f} mm²)")
     print("\nStrength check:")
-    print(f"  φMn = {phi_Mn:.1f} kN·m  ≥  Mu = {Mu} kN·m  " f"{'✓' if phi_Mn >= Mu else '✗'}")
-    print(f"\nPenalty : {result.best_penalty:.4f}  " f"({'feasible' if result.best_penalty <= 0 else 'INFEASIBLE'})")
+    print(f"  φMn = {phi_mn:.1f} kN·m  ≥  Mu = {Mu} kN·m  {'✓' if phi_mn >= Mu else '✗'}")
+    print(f"\nPenalty : {result.best_penalty:.4f}  ({'feasible' if result.best_penalty <= 0 else 'INFEASIBLE'})")

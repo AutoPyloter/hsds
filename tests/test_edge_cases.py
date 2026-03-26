@@ -317,7 +317,7 @@ class TestDeterminism:
     def test_same_seed_same_result(self):
         r1 = self._run(seed=42)
         r2 = self._run(seed=42)
-        assert r1.best_fitness == r2.best_fitness
+        assert r1.best_fitness == pytest.approx(r2.best_fitness)
         assert r1.best_harmony == r2.best_harmony
 
     def test_different_seeds_different_results(self):
@@ -614,10 +614,10 @@ class TestEngineeringPhysics:
         var = ConcreteGrade()
         for idx in var._indices:
             props = var.decode(idx)
-            expected_Ecm = 22.0 * (props.fcm_MPa / 10.0) ** 0.3
+            expected_ecm = 22.0 * (props.fcm_MPa / 10.0) ** 0.3
             assert (
-                abs(props.Ecm_GPa - expected_Ecm) < 0.5
-            ), f"{props.name}: Ecm={props.Ecm_GPa:.2f}, expected={expected_Ecm:.2f}"
+                abs(props.Ecm_GPa - expected_ecm) < 0.5
+            ), f"{props.name}: Ecm={props.Ecm_GPa:.2f}, expected={expected_ecm:.2f}"
 
     def test_aci_rebar_all_valid_codes_satisfy_rho(self):
         """_valid_codes içindeki her kod _bar_is_valid_single'dan geçmeli."""

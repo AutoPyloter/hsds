@@ -342,16 +342,18 @@ class TestComputeBwProperties:
         bw_max=st.floats(min_value=0.001, max_value=1.0, allow_nan=False, allow_infinity=False),
         bw_min=st.floats(min_value=0.0001, max_value=0.5, allow_nan=False, allow_infinity=False),
         t=st.integers(min_value=0, max_value=9999),
-        T=st.integers(min_value=2, max_value=10000),
+        total_iterations=st.integers(min_value=2, max_value=10000),
     )
     @settings(max_examples=300)
-    def test_bw_always_in_range(self, bw_max, bw_min, t, T):
+    def test_bw_always_in_range(self, bw_max, bw_min, t, total_iterations):
         assume(bw_min <= bw_max)
-        assume(t < T)
+        assume(t < total_iterations)
 
         space = DesignSpace()
         space.add("x", Continuous(0.0, 1.0))
         opt = Minimization(space, lambda h: (h["x"], 0.0))
 
-        bw = opt._compute_bw(t, T, bw_max, bw_min)
-        assert bw_min * 0.999 <= bw <= bw_max * 1.001, f"bw={bw} not in [{bw_min}, {bw_max}] at t={t}, T={T}"
+        bw = opt._compute_bw(t, total_iterations, bw_max, bw_min)
+        assert (
+            bw_min * 0.999 <= bw <= bw_max * 1.001
+        ), f"bw={bw} not in [{bw_min}, {bw_max}] at t={t}, T={total_iterations}"

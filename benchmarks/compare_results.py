@@ -30,6 +30,9 @@ sys.path.insert(0, str(BENCHMARKS_DIR))
 
 from utils.plotter import plot_comparison  # noqa: E402
 
+STATIC_PENALTY_LABEL = "Static Penalty"
+FULL_PARAMETRIC_EXTREME_LABEL = "Full Parametric Extreme"
+
 # ---------------------------------------------------------------------------
 # Problem & method registry
 # ---------------------------------------------------------------------------
@@ -38,19 +41,19 @@ PROBLEMS: Dict[str, Dict[str, Any]] = {
     "welded_beam": {
         "title": "Welded Beam Design",
         "methods": [
-            ("static_penalty", "Static Penalty", BENCHMARKS_DIR / "welded_beam" / "static_penalty"),
+            ("static_penalty", STATIC_PENALTY_LABEL, BENCHMARKS_DIR / "welded_beam" / "static_penalty"),
             ("dependent_space", "Dependent Space", BENCHMARKS_DIR / "welded_beam" / "dependent_space"),
         ],
     },
     "pressure_vessel": {
         "title": "Pressure Vessel Design",
         "methods": [
-            ("static_penalty", "Static Penalty", BENCHMARKS_DIR / "pressure_vessel" / "static_penalty"),
+            ("static_penalty", STATIC_PENALTY_LABEL, BENCHMARKS_DIR / "pressure_vessel" / "static_penalty"),
             ("dependent_space", "Dependent Space", BENCHMARKS_DIR / "pressure_vessel" / "dependent_space"),
             ("semi_dependent", "Semi-Dependent", BENCHMARKS_DIR / "pressure_vessel" / "semi_dependent"),
             (
                 "full_parametric_extreme",
-                "Full Parametric Extreme",
+                FULL_PARAMETRIC_EXTREME_LABEL,
                 BENCHMARKS_DIR / "pressure_vessel" / "full_parametric_extreme",
             ),
         ],
@@ -58,11 +61,11 @@ PROBLEMS: Dict[str, Dict[str, Any]] = {
     "spring_design": {
         "title": "Spring Design",
         "methods": [
-            ("static_penalty", "Static Penalty", BENCHMARKS_DIR / "spring_design" / "static_penalty"),
+            ("static_penalty", STATIC_PENALTY_LABEL, BENCHMARKS_DIR / "spring_design" / "static_penalty"),
             ("semi_dependent", "Semi-Dependent", BENCHMARKS_DIR / "spring_design" / "semi_dependent"),
             (
                 "full_parametric_extreme",
-                "Full Parametric Extreme",
+                FULL_PARAMETRIC_EXTREME_LABEL,
                 BENCHMARKS_DIR / "spring_design" / "full_parametric_extreme",
             ),
         ],
@@ -70,11 +73,11 @@ PROBLEMS: Dict[str, Dict[str, Any]] = {
     "speed_reducer": {
         "title": "Speed Reducer Design",
         "methods": [
-            ("static_penalty", "Static Penalty", BENCHMARKS_DIR / "speed_reducer" / "static_penalty"),
+            ("static_penalty", STATIC_PENALTY_LABEL, BENCHMARKS_DIR / "speed_reducer" / "static_penalty"),
             ("semi_dependent", "Semi-Dependent", BENCHMARKS_DIR / "speed_reducer" / "semi_dependent"),
             (
                 "full_parametric_extreme",
-                "Full Parametric Extreme",
+                FULL_PARAMETRIC_EXTREME_LABEL,
                 BENCHMARKS_DIR / "speed_reducer" / "full_parametric_extreme",
             ),
         ],
@@ -82,10 +85,10 @@ PROBLEMS: Dict[str, Dict[str, Any]] = {
     "robot_gripper": {
         "title": "Robot Gripper Design",
         "methods": [
-            ("static_penalty", "Static Penalty", BENCHMARKS_DIR / "robot_gripper" / "static_penalty"),
+            ("static_penalty", STATIC_PENALTY_LABEL, BENCHMARKS_DIR / "robot_gripper" / "static_penalty"),
             (
                 "full_parametric_extreme",
-                "Full Parametric Extreme",
+                FULL_PARAMETRIC_EXTREME_LABEL,
                 BENCHMARKS_DIR / "robot_gripper" / "full_parametric_extreme",
             ),
         ],
@@ -93,7 +96,7 @@ PROBLEMS: Dict[str, Dict[str, Any]] = {
     "retaining_wall": {
         "title": "Retaining Wall Optimization",
         "methods": [
-            ("static_penalty", "Static Penalty", BENCHMARKS_DIR / "retaining_wall" / "static_penalty"),
+            ("static_penalty", STATIC_PENALTY_LABEL, BENCHMARKS_DIR / "retaining_wall" / "static_penalty"),
             (
                 "dependent_space",
                 "Dependent Space (Zero-Penalty)",
@@ -110,7 +113,7 @@ PROBLEMS: Dict[str, Dict[str, Any]] = {
 def _print_summary_table() -> None:
     """Print a formatted comparison table from summary.json files."""
     divider = "-" * 88
-    header = f"  {'Problem':<22} {'Method':<28} {'Best Cost':>12} " f"{'Penalty':>10} {'Time (s)':>10}"
+    header = f"  {'Problem':<22} {'Method':<28} {'Best Cost':>12} {'Penalty':>10} {'Time (s)':>10}"
     print("\n" + divider)
     print("  BENCHMARK COMPARISON SUMMARY")
     print(divider)

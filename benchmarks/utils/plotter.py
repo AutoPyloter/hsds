@@ -29,6 +29,8 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 import numpy as np
 
+OBJECTIVE_FUNCTION_COST_LABEL = "Objective Function (Cost)"
+
 # ---------------------------------------------------------------------------
 # Global academic style
 # ---------------------------------------------------------------------------
@@ -160,7 +162,7 @@ class ConvergencePlotter:
         # --- configurable labels ---
         self.title: str = "Optimization Convergence History"
         self.x_label: str = "Iterations"
-        self.y_fit_label: str = "Objective Function (Cost)"
+        self.y_fit_label: str = OBJECTIVE_FUNCTION_COST_LABEL
         self.y_pen_label: str = "Constraint Violation (Penalty)"
 
         # --- optional axis limits ---
@@ -251,12 +253,12 @@ class ConvergencePlotter:
         first_feasible_fitness: float = -1.0
 
         for i, rec in enumerate(self.iterations_data):
-            if rec.penalty == 0.0:
+            if np.isclose(rec.penalty, 0.0):
                 first_zero_idx = i
                 first_feasible_fitness = rec.fitness
                 break
 
-        all_zero: bool = all(r.penalty == 0.0 for r in self.iterations_data)
+        all_zero: bool = all(np.isclose(r.penalty, 0.0) for r in self.iterations_data)
 
         iterations = [r.iteration for r in self.iterations_data]
         fitness_values = [r.fitness for r in self.iterations_data]
@@ -554,7 +556,7 @@ def plot_multi_run_convergence(
         label=f"{label} ± 1σ",
     )
     ax.set_xlabel("Iterations")
-    ax.set_ylabel("Objective Function (Cost)")
+    ax.set_ylabel(OBJECTIVE_FUNCTION_COST_LABEL)
     ax.legend(framealpha=0.85, edgecolor="#cccccc")
     ax.grid(True, linestyle="--", alpha=0.55)
 
@@ -623,7 +625,7 @@ def plot_comparison(
             label=label,
         )
 
-    ylabel = "Objective Function (Cost)" if metric == "fitness" else "Constraint Violation (Penalty)"
+    ylabel = OBJECTIVE_FUNCTION_COST_LABEL if metric == "fitness" else "Constraint Violation (Penalty)"
     ax.set_xlabel("Iterations")
     ax.set_ylabel(ylabel)
     ax.set_title(title, pad=15)

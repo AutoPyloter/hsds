@@ -5,6 +5,7 @@ import uuid
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import seaborn as sns
 
@@ -59,7 +60,7 @@ BENCHMARKS = [
 
 def run_single_optimization(args):
     try:
-        prob_id, title, method_type, method_name, module_path, max_iter, run_idx = args
+        _, title, method_type, method_name, module_path, max_iter, run_idx = args
         import importlib
 
         mod = importlib.import_module(f"{module_path}.{method_name}.run")
@@ -102,7 +103,7 @@ def run_single_optimization(args):
         cost_col = "best_fitness" if "best_fitness" in df.columns else "Best Cost"
         iter_col = "iteration" if "iteration" in df.columns else "Iteration"
 
-        valid_df = df[df[penalty_col] == 0.0]
+        valid_df = df[np.isclose(df[penalty_col], 0.0)]
 
         if len(valid_df) > 0:
             final_cost = valid_df[cost_col].min()
