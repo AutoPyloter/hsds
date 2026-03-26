@@ -110,6 +110,8 @@ class CatalogueVariable(Variable):
 class _DynamicGridVariable(Variable):
     """Base for ACIRebar and ACIDoubleRebar."""
 
+    _n: int
+
     def _valid_codes(self, ctx: Context) -> List[int]:
         raise NotImplementedError
 
