@@ -307,12 +307,13 @@ class PrimeVariable(Variable):
         return [v for v in candidates if v in self._prime_set]
 
     def neighbor(self, value: int, ctx: Context) -> int:
-        if value not in self._prime_set:
+        try:
+            idx = self._primes.index(value)
+            delta = random.choice([-1, 1])  # NOSONAR
+            new_idx = max(0, min(len(self._primes) - 1, idx + delta))
+            return self._primes[new_idx]
+        except ValueError:
             return self.sample(ctx)
-        idx = self._primes.index(value)
-        delta = random.choice([-1, 1])  # NOSONAR
-        new_idx = max(0, min(len(self._primes) - 1, idx + delta))
-        return self._primes[new_idx]
 
 
 # ---------------------------------------------------------------------------
