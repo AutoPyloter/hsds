@@ -7,7 +7,7 @@
   <br>
 
   <a href="https://github.com/AutoPyloter/harmonix/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/AutoPyloter/harmonix/ci.yml?branch=main&label=CI&style=flat-square" alt="CI Status"></a>
-  <a href="#testing"><img src="https://img.shields.io/badge/tests-325%20passed-brightgreen?style=flat-square" alt="Tests"></a>
+<a href="#testing"><img src="https://img.shields.io/badge/tests-472%20passed-brightgreen?style=flat-square" alt="Tests"></a>
   <a href="https://codecov.io/github/AutoPyloter/harmonix"><img src="https://codecov.io/github/AutoPyloter/harmonix/graph/badge.svg?token=H93FEVMFLS&style=flat-square" alt="Codecov"></a>
   <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json&style=flat-square" alt="Ruff"></a>
   <a href="https://mypy-lang.org/"><img src="https://www.mypy-lang.org/static/mypy_badge.svg?style=flat-square" alt="Checked with mypy"></a>
@@ -356,7 +356,7 @@ pip install -r requirements-dev.txt
 pytest tests/ -v
 ```
 
-325 tests across 9 test files covering:
+472 tests across 15 test files covering:
 
 - All variable types — `sample`, `filter`, `neighbor`, edge cases, `lo > hi` validation
 - DesignSpace — dependency chains, empty space, 50-variable stress test
@@ -385,13 +385,13 @@ harmonix/
 │       └── engineering.py # Engineering domain spaces
 ├── examples/
 │   ├── 01_quickstart.py
-│   ├── 02_dependent_bounds.py
-│   ├── 03_engineering_rc_beam.py
-│   ├── 04_custom_variables.py
+│   ├── 02_welded_beam.py
+│   ├── 03_rc_beam_design.py
+│   ├── 04_custom_variable.py
 │   ├── 05_multi_objective.py
 │   ├── 06_steel_beam_design.py
 │   └── 07_rc_section_full.py
-├── tests/                 # 325 tests across 9 files
+├── tests/                 # 472 tests across 15 files
 ├── requirements-dev.txt
 ├── ruff.toml
 ├── pyproject.toml
