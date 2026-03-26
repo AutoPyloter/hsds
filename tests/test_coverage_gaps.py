@@ -74,8 +74,8 @@ class TestOptimizerGaps:
         opt._memory.add({"x": 0.5}, 0.5, 0.0)
 
         # Attempt to save outside (traversal)
-        # On Windows, this might behave differently, but we test the logic.
-        traversal_path = Path("/tmp/outside/secret.json")
+        # We use a path that is likely outside both CWD and /tmp on all platforms.
+        traversal_path = Path("/secret.json")
         opt.save_checkpoint(traversal_path, 10)
 
         # It should have fallen back to Path.cwd() / "secret.json"
@@ -197,7 +197,7 @@ class TestEngineeringGaps:
         # Code 0 (dia 0, count 0) is an edge.
 
         # We need a context where code 0 is valid.
-        ctx = {}  # will be resolved in _valid_codes
+        # ctx = {}  # removed unused
         # Actually _valid_codes is called in neighbor.
         # If we pick a code at the very corner, some Moore offsets will be < 0 or > max.
 
