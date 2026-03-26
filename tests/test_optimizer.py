@@ -42,12 +42,12 @@ class TestHarmonyMemory:
 
     def test_best_min(self):
         mem = self._make_mem("min")
-        _, f, p = mem.best()
+        _, f, _ = mem.best()
         assert math.isclose(f, 0.0, rel_tol=0.0, abs_tol=1e-12)
 
     def test_best_max(self):
         mem = self._make_mem("max")
-        _, f, p = mem.best()
+        _, f, _ = mem.best()
         assert math.isclose(f, 4.0, rel_tol=0.0, abs_tol=1e-12)
 
     def test_worst_min(self):

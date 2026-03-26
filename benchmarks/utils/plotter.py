@@ -247,16 +247,15 @@ class ConvergencePlotter:
         List[float],
         Optional[float],
         Optional[float],
-        float,
         Optional[float],
     ]:
+        """Extract primary series and calculate boundary stats."""
         iterations = [r.iteration for r in self.iterations_data]
         fitness_values = [r.fitness for r in self.iterations_data]
         penalty_values = [r.penalty for r in self.iterations_data]
 
         min_fitness: Optional[float] = min(fitness_values) if fitness_values else None
         last_fitness: Optional[float] = fitness_values[-1] if fitness_values else None
-        max_penalty: float = max(penalty_values) if penalty_values else 0.0
         first_fitness: Optional[float] = fitness_values[0] if fitness_values else None
 
         return (
@@ -265,7 +264,6 @@ class ConvergencePlotter:
             penalty_values,
             min_fitness,
             last_fitness,
-            max_penalty,
             first_fitness,
         )
 
@@ -279,7 +277,6 @@ class ConvergencePlotter:
         penalty_values: List[float],
         min_fitness: Optional[float],
         last_fitness: Optional[float],
-        max_penalty: float,
     ) -> Tuple[List[Optional[float]], List[Optional[float]], Optional[float], Optional[float], Optional[float]]:
         """
         Build the two draw-series arrays (with None gaps) and update axis/reference stats.
@@ -294,12 +291,12 @@ class ConvergencePlotter:
 
         if all_zero:
             penalties_draw = [None] * len(self.iterations_data)
-            fitness_draw = list(fitness_values)
+            fitness_draw = [float(v) for v in fitness_values]
             y_pen_zero_phys = None
             return penalties_draw, fitness_draw, min_fitness, last_fitness, y_pen_zero_phys
 
         if first_zero_idx == -1:
-            penalties_draw = list(penalty_values)
+            penalties_draw = [float(v) for v in penalty_values]
             fitness_draw = [None] * len(self.iterations_data)
             y_pen_zero_phys = None
             return penalties_draw, fitness_draw, None, None, y_pen_zero_phys
@@ -323,7 +320,7 @@ class ConvergencePlotter:
         iterations: List[int],
         fitness_draw: List[Optional[float]],
     ) -> List[float]:
-        valid_fit_vals = [v for v in fitness_draw if v is not None]
+        valid_fit_vals = [float(v) for v in fitness_draw if v is not None]
         if not valid_fit_vals:
             ax1.set_ylabel("")
             ax1.set_yticks([])
@@ -350,7 +347,7 @@ class ConvergencePlotter:
         penalties_draw: List[Optional[float]],
         valid_fit_vals: List[float],
     ) -> List[float]:
-        valid_pen_vals = [v for v in penalties_draw if v is not None]
+        valid_pen_vals = [float(v) for v in penalties_draw if v is not None]
         if not valid_fit_vals:
             ax2.grid(True, linestyle="--", alpha=0.55)
 
@@ -568,7 +565,6 @@ class ConvergencePlotter:
             penalty_values,
             min_fitness,
             last_fitness,
-            max_penalty,
             first_fitness,
         ) = self._extract_series()
 
@@ -586,7 +582,6 @@ class ConvergencePlotter:
             penalty_values=penalty_values,
             min_fitness=min_fitness,
             last_fitness=last_fitness,
-            max_penalty=max_penalty,
         )
 
         fig, ax1 = plt.subplots(figsize=(12, 6))

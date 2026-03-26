@@ -23,6 +23,7 @@ from __future__ import annotations
 import json
 import math
 import random
+import tempfile
 import time
 from abc import ABC
 from dataclasses import dataclass, field
@@ -491,8 +492,25 @@ class HarmonySearchOptimizer(ABC):
             "iteration": iteration,
             "memory": self._memory.to_dict() if self._memory else None,
         }
-        # Path resolution for security compliance
+        # Path resolution and validation for security compliance (CWE-22)
         target_path = Path(path).resolve()
+        base_path = Path.cwd().resolve()
+        try:
+            temp_base = Path(tempfile.gettempdir()).resolve()
+        except Exception:
+            temp_base = base_path
+
+        def _is_relative_robust(p: Path, base: Path) -> bool:
+            try:
+                # Use string prefix check for cross-platform/case-insensitive robustness
+                return str(p).lower().startswith(str(base).lower())
+            except Exception:
+                return False
+
+        if not (_is_relative_robust(target_path, base_path) or _is_relative_robust(target_path, temp_base)):
+            # Fallback to current directory for safety if traversal attempted elsewhere
+            target_path = base_path / target_path.name
+
         target_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
     def load_checkpoint(self, path: Path) -> int:
