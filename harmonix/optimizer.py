@@ -208,62 +208,52 @@ class HarmonySearchOptimizer(ABC):
 
     # --- core HS operators -------------------------------------------------
 
-    def _improvise(self, hmcr: float, par: float, bw: float = 0.05) -> Harmony:
+    def _improvise(
+        self,
+        hmcr: float,
+        par: float,
+        bw: float = 0.05,
+        harmonies: Optional[List[Harmony]] = None,
+    ) -> Harmony:
         """
         Single improvisation step (all variables, in definition order).
 
         For each variable:
         1. With probability HMCR — memory consideration:
-           collect values from memory → filter to context-feasible ones
-           → pick one → with probability PAR apply pitch adjustment.
+           collect values from source (memory or provided harmonies) → filter to
+           context-feasible ones → pick one → with probability PAR apply pitch adjustment.
         2. With probability (1 − HMCR) — random selection.
 
         Parameters
         ----------
         hmcr : float
-            Harmony Memory Considering Rate.
         par : float
-            Pitch Adjusting Rate.
         bw : float
-            Current bandwidth for continuous pitch adjustment.
-            Injected into ``ctx["__bw__"]`` so :class:`~variables.Continuous`
-            can read it without changing the ``Variable`` interface.
+        harmonies : list of dict, optional
+            Alternative source of harmonies (e.g. from Pareto archive).
+            Defaults to ``self._memory.harmonies``.
         """
         ctx: Harmony = {"__bw__": bw}
+        source = harmonies if harmonies is not None else (self._memory.harmonies if self._memory else [])
+
         for name, var in self.space.items():
-            if random.random() < hmcr:
-                candidates = [h[name] for h in self._memory.harmonies]
+            if random.random() < hmcr and source:
+                candidates = [h[name] for h in source]
                 valid = var.filter(candidates, ctx=ctx)
                 if valid:
                     base = random.choice(valid)
                     ctx[name] = var.neighbor(base, ctx=ctx) if random.random() < par else base
                     continue
-            # Random selection (fallback when HMCR misses or no valid candidates)
             ctx[name] = var.sample(ctx=ctx)
-        # Remove internal key before returning
+
         ctx.pop("__bw__", None)
         return ctx
 
     def _improvise_from_archive(self, hmcr: float, par: float, archive: ParetoArchive, bw: float = 0.05) -> Harmony:
-        """
-        Improvisation that draws base values from the Pareto archive.
-
-        Values are filtered to those that are context-feasible at each step,
-        exactly as in :meth:`_improvise`.  If no archive value survives the
-        filter, falls back to a fresh sample.
-        """
-        ctx: Harmony = {"__bw__": bw}
-        for name, var in self.space.items():
-            if random.random() < hmcr and archive.entries:
-                archive_values = [e.harmony[name] for e in archive.entries]
-                valid = var.filter(archive_values, ctx=ctx)
-                if valid:
-                    base = random.choice(valid)
-                    ctx[name] = var.neighbor(base, ctx=ctx) if random.random() < par else base
-                    continue
-            ctx[name] = var.sample(ctx=ctx)
-        ctx.pop("__bw__", None)
-        return ctx
+        """Improvisation that draws base values from the Pareto archive."""
+        # Multi-objective entries have a .harmony attribute.
+        archive_harmonies = [e.harmony for e in archive.entries]
+        return self._improvise(hmcr, par, bw, harmonies=archive_harmonies)
 
     def _compute_bw(
         self,
@@ -302,6 +292,56 @@ class HarmonySearchOptimizer(ABC):
         if max_iter <= 1 or bw_max == bw_min:
             return bw_max
         return bw_max * math.exp(-math.log(bw_max / bw_min) * iteration / max_iter)
+
+    def _parse_optimize_kwargs(self, default_memory_size: int = 20, **kwargs: Any) -> Dict[str, Any]:
+        """
+        Extract and validate common optimizer parameters.
+
+        Parameters
+        ----------
+        default_memory_size : int
+        **kwargs : Any
+
+        Returns
+        -------
+        params : dict
+        """
+        params: Dict[str, Any] = {
+            "memory_size": int(kwargs.pop("memory_size", default_memory_size)),
+            "hmcr": float(kwargs.pop("hmcr", 0.85)),
+            "par": float(kwargs.pop("par", 0.35)),
+            "max_iter": int(kwargs.pop("max_iter", 5000)),
+            "bw_max": float(kwargs.pop("bw_max", 0.05)),
+            "bw_min": float(kwargs.pop("bw_min", 0.001)),
+            "resume": str(kwargs.pop("resume", "auto")),
+            "checkpoint_every": int(kwargs.pop("checkpoint_every", 500)),
+            "use_cache": bool(kwargs.pop("use_cache", False)),
+            "cache_maxsize": int(kwargs.pop("cache_maxsize", 4096)),
+            "log_init": bool(kwargs.pop("log_init", False)),
+            "log_evaluations": bool(kwargs.pop("log_evaluations", False)),
+            "log_history": bool(kwargs.pop("log_history", False)),
+            "history_every": int(kwargs.pop("history_every", 1)),
+            "archive_size": int(kwargs.pop("archive_size", 100)),
+            "callback": kwargs.pop("callback", None),
+            "verbose": bool(kwargs.pop("verbose", False)),
+        }
+
+        # Handle Paths
+        for key in ["checkpoint_path", "init_log_path", "eval_log_path", "history_log_path"]:
+            val = kwargs.pop(key, None)
+            params[key] = Path(val) if val is not None else None
+
+        if kwargs:
+            unexpected = ", ".join(sorted(kwargs))
+            raise TypeError(f"Unexpected keyword argument(s): {unexpected}")
+
+        # Basic validation / capping
+        if params["max_iter"] < 0:
+            raise ValueError(f"max_iter must be non-negative; got {params['max_iter']}.")
+        params["max_iter"] = min(params["max_iter"], MAX_ITER_CAP)
+        params["checkpoint_every"] = max(1, params["checkpoint_every"])
+
+        return params
 
     # --- run setup ---------------------------------------------------------
 
@@ -567,89 +607,44 @@ class Minimization(HarmonySearchOptimizer):
         bw_min : float
             Final bandwidth.  Decays exponentially from *bw_max* to *bw_min*.
         resume : str
-            ``"auto"``   — resume if checkpoint exists, else start fresh.
-            ``"new"``    — always start fresh (overwrites existing checkpoint).
-            ``"resume"`` — always resume; raises if checkpoint not found.
+            ``"auto"`` / ``"new"`` / ``"resume"``.
         checkpoint_path : Path, optional
-            JSON file for crash recovery.
         checkpoint_every : int
-            Save checkpoint every this many iterations.
         use_cache : bool
-            Cache objective evaluations.
         cache_maxsize : int
-            Maximum entries in the evaluation cache (LRU).
-        log_init : bool
-            Write the initial harmony memory to a CSV file once at startup.
-        init_log_path : Path, optional
-        log_evaluations : bool
-            Write every evaluated harmony to a CSV file.
-        eval_log_path : Path, optional
-        log_history : bool
-            Write best-so-far at each iteration to a CSV file.
-        history_log_path : Path, optional
+        log_init, log_evaluations, log_history : bool
+        init_log_path, eval_log_path, history_log_path : Path, optional
         history_every : int
         callback : callable, optional
-            Raise :exc:`StopIteration` for early exit.
         verbose : bool
         """
-        memory_size: int = int(kwargs.pop("memory_size", 20))
-        hmcr: float = float(kwargs.pop("hmcr", 0.85))
-        par: float = float(kwargs.pop("par", 0.35))
-        max_iter: int = int(kwargs.pop("max_iter", 5000))
-        bw_max: float = float(kwargs.pop("bw_max", 0.05))
-        bw_min: float = float(kwargs.pop("bw_min", 0.001))
-        resume: str = str(kwargs.pop("resume", "auto"))
-        checkpoint_path_in = kwargs.pop("checkpoint_path", None)
-        checkpoint_path: Optional[Path] = Path(checkpoint_path_in) if checkpoint_path_in is not None else None
-        checkpoint_every: int = int(kwargs.pop("checkpoint_every", 500))
-        use_cache: bool = bool(kwargs.pop("use_cache", False))
-        cache_maxsize: int = int(kwargs.pop("cache_maxsize", 4096))
-        log_init: bool = bool(kwargs.pop("log_init", False))
-        init_log_path_in = kwargs.pop("init_log_path", None)
-        init_log_path: Optional[Path] = Path(init_log_path_in) if init_log_path_in is not None else None
-        log_evaluations: bool = bool(kwargs.pop("log_evaluations", False))
-        eval_log_path_in = kwargs.pop("eval_log_path", None)
-        eval_log_path: Optional[Path] = Path(eval_log_path_in) if eval_log_path_in is not None else None
-        log_history: bool = bool(kwargs.pop("log_history", False))
-        history_log_path_in = kwargs.pop("history_log_path", None)
-        history_log_path: Optional[Path] = Path(history_log_path_in) if history_log_path_in is not None else None
-        history_every: int = int(kwargs.pop("history_every", 1))
-        callback = kwargs.pop("callback", None)
-        verbose: bool = bool(kwargs.pop("verbose", False))
-
-        if kwargs:
-            unexpected = ", ".join(sorted(kwargs))
-            raise TypeError(f"Unexpected keyword argument(s): {unexpected}")
-
-        if max_iter < 0:
-            raise ValueError(f"max_iter must be non-negative; got {max_iter}.")
-        max_iter = min(max_iter, MAX_ITER_CAP)
-        checkpoint_every = max(1, checkpoint_every)
+        params = self._parse_optimize_kwargs(default_memory_size=20, **kwargs)
 
         start_iter, logger, effective_obj = self._setup_run(
-            memory_size=memory_size,
+            memory_size=params["memory_size"],
             mode="min",
-            checkpoint_path=checkpoint_path,
-            resume=resume,
-            use_cache=use_cache,
-            cache_maxsize=cache_maxsize,
-            log_init=log_init,
-            init_log_path=init_log_path,
-            log_evaluations=log_evaluations,
-            eval_log_path=eval_log_path,
-            log_history=log_history,
-            history_log_path=history_log_path,
-            history_every=history_every,
+            checkpoint_path=params["checkpoint_path"],
+            resume=params["resume"],
+            use_cache=params["use_cache"],
+            cache_maxsize=params["cache_maxsize"],
+            log_init=params["log_init"],
+            init_log_path=params["init_log_path"],
+            log_evaluations=params["log_evaluations"],
+            eval_log_path=params["eval_log_path"],
+            log_history=params["log_history"],
+            history_log_path=params["history_log_path"],
+            history_every=params["history_every"],
         )
         start_iter = max(0, int(start_iter))
+        max_iter = params["max_iter"]
         if start_iter > max_iter:
             start_iter = max_iter
-        if verbose and start_iter > 0:
+        if params["verbose"] and start_iter > 0:
             print(f"[HS] Resumed from checkpoint at iteration {start_iter}.")
 
         history: List[Tuple[Fitness, Penalty]] = []
         t0 = time.perf_counter()
-        ckpt = Path(checkpoint_path) if checkpoint_path else None
+        ckpt = params["checkpoint_path"]
 
         try:
             for it in range(start_iter, max_iter):
@@ -657,17 +652,17 @@ class Minimization(HarmonySearchOptimizer):
                     it=it,
                     start_iter=start_iter,
                     max_iter=max_iter,
-                    bw_max=bw_max,
-                    bw_min=bw_min,
-                    hmcr=hmcr,
-                    par=par,
+                    bw_max=params["bw_max"],
+                    bw_min=params["bw_min"],
+                    hmcr=params["hmcr"],
+                    par=params["par"],
                     effective_obj=effective_obj,
                     logger=logger,
                     history=history,
-                    verbose=verbose,
-                    callback=callback,
+                    verbose=params["verbose"],
+                    callback=params["callback"],
                     ckpt=ckpt,
-                    checkpoint_every=checkpoint_every,
+                    checkpoint_every=params["checkpoint_every"],
                     t0=t0,
                 )
         except StopIteration:
@@ -701,35 +696,8 @@ class Maximization(HarmonySearchOptimizer):
 
     def optimize(self, **kwargs: Any) -> OptimizationResult:
         """Run maximisation (see :meth:`Minimization.optimize` for parameter docs)."""
-
-        memory_size: int = int(kwargs.pop("memory_size", 20))
-        hmcr: float = float(kwargs.pop("hmcr", 0.85))
-        par: float = float(kwargs.pop("par", 0.35))
-        max_iter: int = int(kwargs.pop("max_iter", 5000))
-        bw_max: float = float(kwargs.pop("bw_max", 0.05))
-        bw_min: float = float(kwargs.pop("bw_min", 0.001))
-        resume: str = str(kwargs.pop("resume", "auto"))
-        checkpoint_path_in = kwargs.pop("checkpoint_path", None)
-        checkpoint_path: Optional[Path] = Path(checkpoint_path_in) if checkpoint_path_in is not None else None
-        checkpoint_every: int = int(kwargs.pop("checkpoint_every", 500))
-        use_cache: bool = bool(kwargs.pop("use_cache", False))
-        cache_maxsize: int = int(kwargs.pop("cache_maxsize", 4096))
-        log_init: bool = bool(kwargs.pop("log_init", False))
-        init_log_path_in = kwargs.pop("init_log_path", None)
-        init_log_path: Optional[Path] = Path(init_log_path_in) if init_log_path_in is not None else None
-        log_evaluations: bool = bool(kwargs.pop("log_evaluations", False))
-        eval_log_path_in = kwargs.pop("eval_log_path", None)
-        eval_log_path: Optional[Path] = Path(eval_log_path_in) if eval_log_path_in is not None else None
-        log_history: bool = bool(kwargs.pop("log_history", False))
-        history_log_path_in = kwargs.pop("history_log_path", None)
-        history_log_path: Optional[Path] = Path(history_log_path_in) if history_log_path_in is not None else None
-        history_every: int = int(kwargs.pop("history_every", 1))
-        callback = kwargs.pop("callback", None)
-        verbose: bool = bool(kwargs.pop("verbose", False))
-
-        if kwargs:
-            unexpected = ", ".join(sorted(kwargs))
-            raise TypeError(f"Unexpected keyword argument(s): {unexpected}")
+        params = self._parse_optimize_kwargs(default_memory_size=20, **kwargs)
+        callback = params.pop("callback", None)
 
         wrapped_callback = None
         if callback is not None:
@@ -750,28 +718,7 @@ class Maximization(HarmonySearchOptimizer):
             return -float(f), float(p)
 
         inner = Minimization(self.space, _negated)
-        result = inner.optimize(
-            memory_size=memory_size,
-            hmcr=hmcr,
-            par=par,
-            max_iter=max_iter,
-            bw_max=bw_max,
-            bw_min=bw_min,
-            resume=resume,
-            checkpoint_path=checkpoint_path,
-            checkpoint_every=checkpoint_every,
-            use_cache=use_cache,
-            cache_maxsize=cache_maxsize,
-            log_init=log_init,
-            init_log_path=init_log_path,
-            log_evaluations=log_evaluations,
-            eval_log_path=eval_log_path,
-            log_history=log_history,
-            history_log_path=history_log_path,
-            history_every=history_every,
-            callback=wrapped_callback,
-            verbose=verbose,
-        )
+        result = inner.optimize(callback=wrapped_callback, **params)
         self._memory = inner._memory
 
         return OptimizationResult(
@@ -1047,86 +994,49 @@ class MultiObjective(HarmonySearchOptimizer):
         resume : str
             ``"auto"`` / ``"new"`` / ``"resume"`` — same as Minimization.
         checkpoint_path, checkpoint_every : optional
-            JSON crash-recovery.
         use_cache, cache_maxsize : optional
-            Evaluation cache settings.
         log_init, log_evaluations, log_history : bool
-            Enable CSV logging for init memory, all evaluations, and
-            per-iteration best.
         history_every : int
-            Write to history log every this many iterations.
         callback : callable, optional
         verbose : bool
         """
-        memory_size: int = int(kwargs.pop("memory_size", 30))
-        hmcr: float = float(kwargs.pop("hmcr", 0.85))
-        par: float = float(kwargs.pop("par", 0.35))
-        max_iter: int = int(kwargs.pop("max_iter", 5000))
-        bw_max: float = float(kwargs.pop("bw_max", 0.05))
-        bw_min: float = float(kwargs.pop("bw_min", 0.001))
-        archive_size: int = int(kwargs.pop("archive_size", 100))
-        resume: str = str(kwargs.pop("resume", "auto"))
-        checkpoint_path_in = kwargs.pop("checkpoint_path", None)
-        checkpoint_path: Optional[Path] = Path(checkpoint_path_in) if checkpoint_path_in is not None else None
-        checkpoint_every: int = int(kwargs.pop("checkpoint_every", 500))
-        use_cache: bool = bool(kwargs.pop("use_cache", False))
-        cache_maxsize: int = int(kwargs.pop("cache_maxsize", 4096))
-        log_init: bool = bool(kwargs.pop("log_init", False))
-        init_log_path_in = kwargs.pop("init_log_path", None)
-        init_log_path: Optional[Path] = Path(init_log_path_in) if init_log_path_in is not None else None
-        log_evaluations: bool = bool(kwargs.pop("log_evaluations", False))
-        eval_log_path_in = kwargs.pop("eval_log_path", None)
-        eval_log_path: Optional[Path] = Path(eval_log_path_in) if eval_log_path_in is not None else None
-        log_history: bool = bool(kwargs.pop("log_history", False))
-        history_log_path_in = kwargs.pop("history_log_path", None)
-        history_log_path: Optional[Path] = Path(history_log_path_in) if history_log_path_in is not None else None
-        history_every: int = int(kwargs.pop("history_every", 1))
-        callback = kwargs.pop("callback", None)
-        verbose: bool = bool(kwargs.pop("verbose", False))
+        params = self._parse_optimize_kwargs(default_memory_size=30, **kwargs)
 
-        if kwargs:
-            unexpected = ", ".join(sorted(kwargs))
-            raise TypeError(f"Unexpected keyword argument(s): {unexpected}")
-
-        if max_iter < 0:
-            raise ValueError(f"max_iter must be non-negative; got {max_iter}.")
-        max_iter = min(max_iter, MAX_ITER_CAP)
-        checkpoint_every = max(1, checkpoint_every)
-
-        effective_obj = self._wrap_objective(use_cache=use_cache, cache_maxsize=cache_maxsize)
-        ckpt = Path(checkpoint_path) if checkpoint_path else None
+        effective_obj = self._wrap_objective(use_cache=params["use_cache"], cache_maxsize=params["cache_maxsize"])
+        ckpt = params["checkpoint_path"]
 
         init_path, eval_path, hist_path = self._resolve_logger_paths(
             ckpt=ckpt,
-            log_init=log_init,
-            init_log_path=init_log_path,
-            log_evaluations=log_evaluations,
-            eval_log_path=eval_log_path,
-            log_history=log_history,
-            history_log_path=history_log_path,
+            log_init=params["log_init"],
+            init_log_path=params["init_log_path"],
+            log_evaluations=params["log_evaluations"],
+            eval_log_path=params["eval_log_path"],
+            log_history=params["log_history"],
+            history_log_path=params["history_log_path"],
         )
         logger = RunLogger(
             variable_names=self.space.names(),
             init_log_path=init_path,
             eval_log_path=eval_path,
             history_log_path=hist_path,
-            history_every=history_every,
+            history_every=params["history_every"],
         )
 
-        should_resume = self._decide_should_resume(ckpt=ckpt, resume=resume)
+        should_resume = self._decide_should_resume(ckpt=ckpt, resume=params["resume"])
 
         start_iter, _, archive = self._mo_init_state(
             ckpt=ckpt,
             should_resume=should_resume,
-            memory_size=memory_size,
-            archive_size=archive_size,
+            memory_size=params["memory_size"],
+            archive_size=params["archive_size"],
             effective_obj=effective_obj,
-            log_init=log_init,
+            log_init=params["log_init"],
             logger=logger,
-            verbose=verbose,
+            verbose=params["verbose"],
         )
 
         start_iter = max(0, int(start_iter))
+        max_iter = params["max_iter"]
         if start_iter > max_iter:
             start_iter = max_iter
 
@@ -1134,16 +1044,8 @@ class MultiObjective(HarmonySearchOptimizer):
         t0 = time.perf_counter()
 
         it_info = {"start_iter": start_iter, "max_iter": max_iter}
-        params = {
-            "hmcr": hmcr,
-            "par": par,
-            "bw_max": bw_max,
-            "bw_min": bw_min,
-            "callback": callback,
-            "verbose": verbose,
-            "ckpt": ckpt,
-            "checkpoint_every": checkpoint_every,
-        }
+        # Simplify params mapping for inner method
+        params["ckpt"] = ckpt
 
         try:
             for it in range(start_iter, max_iter):
