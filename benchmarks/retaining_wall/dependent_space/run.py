@@ -22,17 +22,19 @@ from typing import Any, Dict, Tuple
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent.parent))
 
+from benchmarks.retaining_wall.common import (
+    COVER,
+    FY_MPA,
+    GAMMA_SOIL,
+    H_STEM,
+    KA,
+    WIDTH_B,
+    compute_aci_demands,
+    compute_cost,
+    compute_geotech,
+)
 from harmonix import ACIRebar, Continuous, DesignSpace, Minimization
 from harmonix.spaces.engineering import _AREAS_50, _COUNTS
-
-H_STEM = 5.0  # m
-GAMMA_SOIL = 18.0  # kN/m3
-GAMMA_CONC = 24.0  # kN/m3
-PHI_SOIL = math.radians(30.0)
-KA = (1.0 - math.sin(PHI_SOIL)) / (1.0 + math.sin(PHI_SOIL))
-FY_MPA = 420.0
-COVER = 60.0  # mm
-WIDTH_B = 1000.0  # mm
 
 N_COUNTS = len(_COUNTS)
 
@@ -46,12 +48,6 @@ def steel_area(code: int) -> float:
     return _AREAS_50[i] / 50.0 * _COUNTS[j]
 
 
-def get_beta1(fc: float) -> float:
-    if fc <= 28.0:
-        return 0.85
-    return max(0.65, 0.85 - 0.05 * (fc - 28.0) / 7.0)
-
-
 # --- Dependency Mappers ---
 
 
@@ -60,44 +56,19 @@ def _x3_min(ctx: Dict[str, float]) -> float:
     fc = round(ctx["fc"] / 5.0) * 5.0
     x4 = round(ctx["x4"] / 50.0) * 50.0
 
-    vu_stem = 1.6 * (0.5 * KA * GAMMA_SOIL * H_STEM**2) * 1000.0  # N
+    # vu_stem calculation: 1.6 * (0.5 * KA * GAMMA_SOIL * H_STEM**2) [kN]
+    # In N:
+    vu_stem_n = 1.6 * (0.5 * KA * GAMMA_SOIL * H_STEM**2) * 1000.0
     # phi * Vc = 0.75 * 0.17 * sqrt(f'c) * bw * d
     shear_cap_per_mm = 0.75 * 0.17 * math.sqrt(fc) * WIDTH_B
-    d_req = vu_stem / shear_cap_per_mm
+    d_req = vu_stem_n / shear_cap_per_mm
 
     return float(max(300.0, x4, math.ceil((d_req + COVER) / 50.0) * 50.0))
 
 
 def check_geotech_stability(x1, x2, x3, x4, x5) -> bool:
-    t_base_m = x5 / 1000.0
-    h_tot = H_STEM + t_base_m
-    l_heel = x1 - x2 - x3
-    if l_heel < 0:
-        return False
-
-    pa = 0.5 * KA * GAMMA_SOIL * (h_tot**2)
-    mo = pa * (h_tot / 3.0)
-
-    w_base = (x1 / 1000.0) * t_base_m * GAMMA_CONC
-    w_base_x = (x1 / 1000.0) / 2.0
-
-    w_stem_rect = (x4 / 1000.0) * H_STEM * GAMMA_CONC
-    w_stem_rect_x = (x2 + x3 - x4 / 2.0) / 1000.0
-
-    w_stem_tri = 0.5 * ((x3 - x4) / 1000.0) * H_STEM * GAMMA_CONC
-    w_stem_tri_x = (x2 + (x3 - x4) * (2.0 / 3.0)) / 1000.0
-
-    w_soil = (l_heel / 1000.0) * H_STEM * GAMMA_SOIL
-    w_soil_x = (x1 - l_heel / 2.0) / 1000.0
-
-    sum_w = w_base + w_stem_rect + w_stem_tri + w_soil
-    mr = (w_base * w_base_x) + (w_stem_rect * w_stem_rect_x) + (w_stem_tri * w_stem_tri_x) + (w_soil * w_soil_x)
-
-    fs_ov = mr / mo if mo > 0 else 100.0
-    fs_sl = (sum_w * math.tan(PHI_SOIL)) / pa
-    e = abs((x1 / 2000.0) - ((mr - mo) / sum_w))
-
-    return fs_ov >= 2.5 and fs_sl >= 2.5 and e <= (x1 / 6000.0)
+    l_heel, fs_ov, fs_sl, e = compute_geotech(x1, x2, x3, x4, x5)
+    return fs_ov >= 2.5 and fs_sl >= 2.5 and abs(e) <= (x1 / 6000.0)
 
 
 def _x1_bounds(ctx: Dict[str, float]) -> Tuple[float, float]:
@@ -167,22 +138,15 @@ def objective(config: Dict[str, Any]) -> Tuple[float, float]:
     inversion_penalties = [max(0.0, _x3_min(config) - x3), max(0.0, _x1_min(config) - _x1_max(config))]
     space_penalty = sum(p**2 for p in inversion_penalties) * 1e8
 
-    t_base_m = x5 / 1000.0
-    l_heel = x1 - x2 - x3
+    # --- Loading & Geotech ---
+    l_heel, _, _, _ = compute_geotech(x1, x2, x3, x4, x5)
 
-    # Demands
-    pa_stem = 0.5 * KA * GAMMA_SOIL * (H_STEM**2)
-    mu_stem = 1.6 * pa_stem * (H_STEM / 3.0)
-    d_stem = x3 - COVER
-
-    w_heel_total = 1.2 * (GAMMA_SOIL * H_STEM + GAMMA_CONC * t_base_m)
-    vu_heel_n = w_heel_total * (l_heel / 1000.0) * 1000.0
-    mu_heel = w_heel_total * ((l_heel / 1000.0) ** 2 / 2.0)
-    d_base = x5 - COVER
+    # --- Structural ACI Demands ---
+    (vu_stem, mu_stem, d_stem), (vu_heel, mu_heel, d_base) = compute_aci_demands(x3, x5, l_heel)
 
     # Embed shear check for heel (dynamically penalized if it fails because x5 wasn't pruned)
     phi_vc_heel = 0.75 * 0.17 * math.sqrt(fc) * WIDTH_B * d_base
-    shear_pen = max(0.0, vu_heel_n - phi_vc_heel) ** 2 * 1e4
+    shear_pen = max(0.0, (vu_heel * 1000.0) - phi_vc_heel) ** 2 * 1e4
 
     code_stem = config["dc_stem"]
     code_base = config["dc_base"]
@@ -202,10 +166,8 @@ def objective(config: Dict[str, Any]) -> Tuple[float, float]:
     phi_mn_base = 0.9 * as_b * FY_MPA * max(0.1, d_base - a_base / 2.0) * 1e-6
     mu_pen_base = max(0.0, mu_heel - phi_mn_base) ** 2 * 1e4
 
-    vol_conc = (x1 / 1000.0) * t_base_m + 0.5 * (x3 + x4) / 1000.0 * H_STEM
-    cost_conc = (0.5 + 0.02 * fc) * vol_conc
-    cost_steel = 50.0 * (as_s + as_b) / 1000.0
-    total_cost = cost_conc + cost_steel
+    # --- Cost Evaluation ---
+    total_cost = compute_cost(x1, x3, x4, x5, fc, as_s, as_b)
 
     return total_cost, space_penalty + shear_pen + mu_pen_stem + mu_pen_base
 

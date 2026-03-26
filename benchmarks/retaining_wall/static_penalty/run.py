@@ -20,24 +20,19 @@ from typing import Any, Dict, Tuple
 # Path resolution for local testing
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent.parent))
 
+from benchmarks.retaining_wall.common import (
+    COVER,
+    FY_MPA,
+    WIDTH_B,
+    compute_aci_demands,
+    compute_cost,
+    compute_geotech,
+    get_beta1,
+)
 from harmonix import Continuous, DesignSpace, Minimization
 
 # Constants
-H_STEM = 5.0  # m
-GAMMA_SOIL = 18.0  # kN/m3
-GAMMA_CONC = 24.0  # kN/m3
-PHI_SOIL = math.radians(30.0)
-KA = (1.0 - math.sin(PHI_SOIL)) / (1.0 + math.sin(PHI_SOIL))
-FY_MPA = 420.0
-COVER = 60.0  # mm
-WIDTH_B = 1000.0  # mm (1m strip)
 DIAMS = [12, 14, 16, 20, 25, 28, 32]
-
-
-def get_beta1(fc: float) -> float:
-    if fc <= 28.0:
-        return 0.85
-    return max(0.65, 0.85 - 0.05 * (fc - 28.0) / 7.0)
 
 
 def build_space() -> DesignSpace:
@@ -73,53 +68,13 @@ def objective(config: Dict[str, Any]) -> Tuple[float, float]:
     idx_base_dia = int(round(config["base_dia_idx"]))
     n_b = int(round(config["base_count"]))
 
-    # --- Geometry Checks ---
-    l_heel = x1 - x2 - x3
+    # --- Loading & Geotech ---
+    l_heel, fs_overturning, fs_sliding, e = compute_geotech(x1, x2, x3, x4, x5)
     if l_heel < 0:
         return 1e12, 1e8  # Physically impossible polygon
 
-    # --- Loading & Geotech ---
-    t_base_m = x5 / 1000.0
-    h_tot = H_STEM + t_base_m
-
-    # Active Earth Thrust
-    pa = 0.5 * KA * GAMMA_SOIL * (h_tot**2)
-    mo = pa * (h_tot / 3.0)
-
-    # Weights and Centers
-    w_base = (x1 / 1000.0) * t_base_m * GAMMA_CONC
-    w_base_x = (x1 / 1000.0) / 2.0
-
-    w_stem_rect = (x4 / 1000.0) * H_STEM * GAMMA_CONC
-    w_stem_rect_x = (x2 + x3 - x4 / 2.0) / 1000.0
-
-    w_stem_tri = 0.5 * ((x3 - x4) / 1000.0) * H_STEM * GAMMA_CONC
-    w_stem_tri_x = (x2 + (x3 - x4) * (2.0 / 3.0)) / 1000.0
-
-    w_soil = (l_heel / 1000.0) * H_STEM * GAMMA_SOIL
-    w_soil_x = (x1 - l_heel / 2.0) / 1000.0
-
-    sum_w = w_base + w_stem_rect + w_stem_tri + w_soil
-    mr = (w_base * w_base_x) + (w_stem_rect * w_stem_rect_x) + (w_stem_tri * w_stem_tri_x) + (w_soil * w_soil_x)
-
-    fs_overturning = mr / mo if mo > 0 else 100.0
-    fs_sliding = (sum_w * math.tan(PHI_SOIL)) / pa
-
-    # Eccentricity
-    e = (x1 / 2000.0) - ((mr - mo) / sum_w)
-
     # --- Structural ACI Demands ---
-    # Stem at base
-    pa_stem = 0.5 * KA * GAMMA_SOIL * (H_STEM**2)
-    vu_stem = 1.6 * pa_stem
-    mu_stem = 1.6 * pa_stem * (H_STEM / 3.0)
-    d_stem = x3 - COVER
-
-    # Heel at back of stem
-    w_heel_total = 1.2 * (GAMMA_SOIL * H_STEM + GAMMA_CONC * t_base_m)
-    vu_heel = w_heel_total * (l_heel / 1000.0)
-    mu_heel = w_heel_total * ((l_heel / 1000.0) ** 2 / 2.0)
-    d_base = x5 - COVER
+    (vu_stem, mu_stem, d_stem), (vu_heel, mu_heel, d_base) = compute_aci_demands(x3, x5, l_heel)
 
     # Rebars
     db_s = DIAMS[idx_stem_dia]
@@ -151,10 +106,7 @@ def objective(config: Dict[str, Any]) -> Tuple[float, float]:
     penalty_value = sum(max(0.0, limit) ** 2 for limit in g) * 1e6
 
     # --- Cost Evaluation ---
-    vol_conc = (x1 / 1000.0) * t_base_m + 0.5 * (x3 + x4) / 1000.0 * H_STEM
-    cost_conc = (0.5 + 0.02 * fc) * vol_conc
-    cost_steel = 50.0 * (as_s + as_b) / 1000.0
-    total_cost = cost_conc + cost_steel
+    total_cost = compute_cost(x1, x3, x4, x5, fc, as_s, as_b)
 
     return total_cost, penalty_value
 
