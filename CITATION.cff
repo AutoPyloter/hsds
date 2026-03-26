@@ -4,7 +4,7 @@ authors:
   - family-names: "Özcan"
     given-names: "Abdulkadir"
 title: "HSDS: Harmony Search Optimization with Dependent Variable Spaces"
-version: 1.0.2
+version: 2.0.0
 doi: "10.5281/zenodo.19160245"
 date-released: 2026-03-22
 url: "https://github.com/AutoPyloter/hsds"

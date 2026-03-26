@@ -20,7 +20,7 @@ jobs:
       - name: Check distribution
         run: twine check dist/*
       - name: Verify package name
-        run: ls dist/ | grep hsds
+        run: ls dist/ | grep pyhsds
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/project/hsds/
+      url: https://pypi.org/project/pyhsds/
     permissions:
       id-token: write
     steps:
@@ -43,6 +43,6 @@ jobs:
           name: dist
           path: dist/
       - name: Verify package name before upload
-        run: ls dist/ | grep hsds
+        run: ls dist/ | grep pyhsds
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1

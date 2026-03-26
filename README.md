@@ -14,7 +14,7 @@
   <a href="https://github.com/pre-commit/pre-commit"><img src="https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white&style=flat-square" alt="pre-commit"></a>
   <a href="https://github.com/AutoPyloter/hsds/network/updates"><img src="https://img.shields.io/badge/Dependabot-enabled-blue?logo=dependabot&style=flat-square" alt="Dependabot"></a>
   <a href="https://peps.python.org/pep-0561/"><img src="https://img.shields.io/badge/types-PEP_561-blue.svg?style=flat-square" alt="PEP 561"></a>
-  <a href="https://libraries.io/pypi/hsds"><img src="https://img.shields.io/librariesio/release/pypi/pyhsds?style=flat-square" alt="Dependencies"></a>
+  <a href="https://libraries.io/pypi/pyhsds"><img src="https://img.shields.io/librariesio/release/pypi/pyhsds?style=flat-square" alt="Dependencies"></a>
   [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=AutoPyloter_hsds&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=AutoPyloter_hsds)
   <br>
 
@@ -60,7 +60,7 @@ print(result)
 ## Installation
 
 ```bash
-pip install hsds
+pip install pyhsds
 ```
 
 Requires Python 3.8+. No mandatory dependencies beyond the standard library.
@@ -405,7 +405,7 @@ hsds/
 If you use `hsds` in your research, please cite it as follows:
 
 **APA:**
-> Özcan, A. (2026). hsds: Harmony Search Algorithm for Dependent Design Spaces (Version 1.0.2) [Computer software]. https://doi.org/10.5281/zenodo.19160019
+> Özcan, A. (2026). hsds: Harmony Search Algorithm for Dependent Design Spaces (Version 2.0.0) [Computer software]. https://doi.org/10.5281/zenodo.19160019
 
 **BibTeX:**
 ```bibtex
@@ -415,7 +415,7 @@ If you use `hsds` in your research, please cite it as follows:
   month        = mar,
   year         = 2026,
   publisher    = {Zenodo},
-  version      = {1.0.2},
+  version      = {2.0.0},
   doi          = {10.5281/zenodo.19160019},
   url          = {https://doi.org/10.5281/zenodo.19160019}
 }

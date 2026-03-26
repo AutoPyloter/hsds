@@ -154,6 +154,6 @@ __all__ = [
     "SeismicZone",
 ]
 
-__version__ = "1.0.2"
+__version__ = "2.0.0"
 __author__ = "Abdulkadir Özcan"
 __license__ = "MIT"
