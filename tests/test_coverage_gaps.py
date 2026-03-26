@@ -177,6 +177,22 @@ class TestOptimizerGaps:
 
 
 class TestEngineeringGaps:
+    def test_catalogue_variable_base_coverage(self):
+        """Covers engineering.py:93 (self._indices = list(range(n)))."""
+        from harmonix.spaces.engineering import CatalogueVariable
+
+        class DummyCatalogue(CatalogueVariable):
+            def describe(self, code):
+                return str(code)
+
+        # Ensure __init__ is called and _indices is set
+        var = DummyCatalogue(n=10)
+        assert var._indices == list(range(10))
+        assert var.sample({}) in range(10)
+        assert var.filter([1, 15], {}) == [1]
+        assert var.neighbor(0, {}) in [0, 1]
+        assert var.neighbor(15, {}) in range(10)
+
     def test_dynamic_grid_not_implemented(self):
         """Covers engineering.py:116 (raise NotImplementedError)."""
         var = _DynamicGridVariable()
@@ -190,24 +206,14 @@ class TestEngineeringGaps:
 
         var = ACIRebar(d_expr=0.5, cc_expr=40.0)
 
-        # Force a value at the edge of the grid
-        # _n is len(_COUNTS) which is 38 (4 to 41)
-        # _DIAMETERS has 12 entries.
-        # Max code = (11 * 38) + 37 = 455
-        # Code 0 (dia 0, count 0) is an edge.
-
-        # We need a context where code 0 is valid.
-        # ctx = {}  # removed unused
-        # Actually _valid_codes is called in neighbor.
-        # If we pick a code at the very corner, some Moore offsets will be < 0 or > max.
-
-        # Let's find a valid code at an edge.
-        valid = var._valid_codes({})
-        if valid:
-            code = valid[0]  # Usually a small code
-            # Testing neighbor(code) should trigger 'continue' for out-of-bounds offsets.
-            res = var.neighbor(code, {})
-            assert res in valid or res == code
+        # Force a value at the edge of the grid where continue will be hit.
+        # i=0, j=0 is first diameter, first count.
+        # di=-1, dj=-1 will trigger the 'continue' because ni < 0.
+        with patch.object(ACIRebar, "_valid_codes", return_value=[0, 1, 2]):
+            # Code 0 corresponds to i=0, j=0.
+            # Its neighbors include ni=-1 which is out of bounds.
+            res = var.neighbor(0, {})
+            assert res in [0, 1]
 
     def test_soil_spt_invalid_kwargs(self):
         """Covers engineering.py:949 (Unexpected keyword argument(s))."""
