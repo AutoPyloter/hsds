@@ -86,6 +86,64 @@ from ..variables import Variable
 Context = Dict[str, Any]
 
 
+class CatalogueVariable(Variable):
+    """Base for variables whose domain is a simple list of indices."""
+
+    def __init__(self, n: int):
+        self._indices = list(range(n))
+
+    def sample(self, ctx: Context) -> int:
+        return random.choice(self._indices)
+
+    def filter(self, candidates: List[int], ctx: Context) -> List[int]:
+        valid = set(self._indices)
+        return [c for c in candidates if c in valid]
+
+    def neighbor(self, value: int, ctx: Context) -> int:
+        if value not in self._indices:
+            return self.sample(ctx)
+        delta = random.choice([-1, 1])
+        new_idx = max(0, min(len(self._indices) - 1, value + delta))
+        return self._indices[new_idx]
+
+
+class _DynamicGridVariable(Variable):
+    """Base for ACIRebar and ACIDoubleRebar."""
+
+    def _valid_codes(self, ctx: Context) -> List[int]:
+        raise NotImplementedError
+
+    def sample(self, ctx: Context) -> Optional[int]:
+        codes = self._valid_codes(ctx)
+        return random.choice(codes) if codes else None
+
+    def filter(self, candidates: List[int], ctx: Context) -> List[int]:
+        valid = set(self._valid_codes(ctx))
+        return [c for c in candidates if c in valid]
+
+    def neighbor(self, value: int, ctx: Context) -> int:
+        codes = self._valid_codes(ctx)
+        valid = set(codes)
+        if value not in valid:
+            return value
+
+        i = value // self._n
+        j = value % self._n
+
+        neighbours: List[int] = []
+        for di, dj in _MOORE_OFFSETS:
+            ni, nj = i + di, j + dj
+            if not (0 <= ni < len(_DIAMETERS) and 0 <= nj < len(_COUNTS)):
+                continue
+            code = ni * self._n + nj
+            if code in valid:
+                neighbours.append(code)
+
+        if neighbours:
+            return random.choice(neighbours)
+        return value
+
+
 # ---------------------------------------------------------------------------
 # Shared bar catalogue  (ASTM / ISO metric)
 # ---------------------------------------------------------------------------
@@ -206,7 +264,7 @@ def _bar_is_valid_single(
 
 
 @register_variable("aci_rebar")
-class ACIRebar(Variable):
+class ACIRebar(_DynamicGridVariable):
     """
     ACI 318 ductile single-row reinforcing bar arrangement.
 
@@ -294,39 +352,6 @@ class ACIRebar(Variable):
 
     # --- Variable interface ------------------------------------------------
 
-    def sample(self, ctx: Context) -> Optional[int]:
-        codes = self._valid_codes(ctx)
-        return random.choice(codes) if codes else None
-
-    def filter(self, candidates: List[int], ctx: Context) -> List[int]:
-        valid = set(self._valid_codes(ctx))
-        return [c for c in candidates if c in valid]
-
-    def neighbor(self, value: int, ctx: Context) -> int:
-        """
-        Move to an adjacent cell in the (diameter × count) grid.
-
-        Considers all 8 Moore-neighbours; returns a randomly selected
-        feasible one, or the original value if no neighbours are feasible.
-        """
-        valid = set(self._valid_codes(ctx))
-        if value not in valid:
-            return value
-
-        i = value // self._n
-        j = value % self._n
-
-        neighbours: List[int] = []
-        for di, dj in _MOORE_OFFSETS:
-            ni, nj = i + di, j + dj
-            if not (0 <= ni < len(_DIAMETERS) and 0 <= nj < len(_COUNTS)):
-                continue
-            code = ni * self._n + nj
-            if code in valid:
-                neighbours.append(code)
-
-        return random.choice(neighbours) if neighbours else value
-
     # --- decode ------------------------------------------------------------
 
     def decode(self, code: int) -> Tuple[float, int]:
@@ -360,7 +385,7 @@ class ACIRebar(Variable):
 
 
 @register_variable("aci_rebar_double")
-class ACIDoubleRebar(Variable):
+class ACIDoubleRebar(_DynamicGridVariable):
     """
     ACI 318 ductile double-row reinforcing bar arrangement.
 
@@ -442,31 +467,7 @@ class ACIDoubleRebar(Variable):
                     codes.append(i * self._n + j)
         return codes
 
-    def sample(self, ctx: Context) -> Optional[int]:
-        codes = self._valid_codes(ctx)
-        return random.choice(codes) if codes else None
-
-    def filter(self, candidates: List[int], ctx: Context) -> List[int]:
-        valid = set(self._valid_codes(ctx))
-        return [c for c in candidates if c in valid]
-
-    def neighbor(self, value: int, ctx: Context) -> int:
-        valid = set(self._valid_codes(ctx))
-        if value not in valid:
-            return value
-        i = value // self._n
-        j = value % self._n
-
-        neighbours: List[int] = []
-        for di, dj in _MOORE_OFFSETS:
-            ni, nj = i + di, j + dj
-            if not (0 <= ni < len(_DIAMETERS) and 0 <= nj < len(_COUNTS)):
-                continue
-            code = ni * self._n + nj
-            if code in valid:
-                neighbours.append(code)
-
-        return random.choice(neighbours) if neighbours else value
+    # --- Variable interface ------------------------------------------------
 
     def decode(self, code: int) -> Tuple[float, int]:
         """Return ``(diameter_mm, bar_count)`` for a given *code*."""
@@ -669,7 +670,7 @@ def _load_catalogue_from_file(path) -> List[SectionProperties]:
 
 
 @register_variable("steel_section")
-class SteelSection(Variable):
+class SteelSection(CatalogueVariable):
     """
     Variable whose domain is a catalogue of standard steel sections.
 
@@ -726,20 +727,9 @@ class SteelSection(Variable):
 
         self._indices = list(range(len(self._sections)))
 
-    def sample(self, ctx) -> int:
-        return random.choice(self._indices)
-
-    def filter(self, candidates: List[int], ctx) -> List[int]:
-        valid = set(self._indices)
-        return [c for c in candidates if c in valid]
-
-    def neighbor(self, value: int, ctx) -> int:
+    def neighbor(self, value: int, ctx: Context) -> int:
         """Move one step up or down in the catalogue (sorted by mass)."""
-        if value not in self._indices:
-            return self.sample(ctx)
-        delta = random.choice([-1, 1])
-        new_idx = max(0, min(len(self._indices) - 1, value + delta))
-        return new_idx
+        return super().neighbor(value, ctx)
 
     def decode(self, index: int) -> SectionProperties:
         """Return the :class:`SectionProperties` for *index*."""
@@ -814,7 +804,7 @@ _CONCRETE_INDEX: Dict[str, int] = {g.name: i for i, g in enumerate(_CONCRETE_GRA
 
 
 @register_variable("concrete_grade")
-class ConcreteGrade(Variable):
+class ConcreteGrade(CatalogueVariable):
     """
     Variable whose domain is a set of EN 206 concrete strength classes.
 
@@ -848,17 +838,8 @@ class ConcreteGrade(Variable):
         self._grades = _CONCRETE_GRADES[lo : hi + 1]
         self._indices = list(range(len(self._grades)))
 
-    def sample(self, ctx) -> int:
-        return random.choice(self._indices)
-
-    def filter(self, candidates: List[int], ctx) -> List[int]:
-        valid = set(self._indices)
-        return [c for c in candidates if c in valid]
-
-    def neighbor(self, value: int, ctx) -> int:
-        delta = random.choice([-1, 1])
-        new_idx = max(0, min(len(self._indices) - 1, value + delta))
-        return new_idx
+    def neighbor(self, value: int, ctx: Context) -> int:
+        return super().neighbor(value, ctx)
 
     def decode(self, index: int) -> ConcreteGradeProperties:
         """Return :class:`ConcreteGradeProperties` for *index*."""
@@ -931,7 +912,7 @@ _SOIL_PROFILES: List[SoilProfile] = [
 
 
 @register_variable("soil_spt")
-class SoilSPT(Variable):
+class SoilSPT(CatalogueVariable):
     """
     Variable whose domain is a set of SPT-N based soil profile classes.
 
@@ -974,17 +955,8 @@ class SoilSPT(Variable):
         self._profiles = filtered
         self._indices = list(range(len(filtered)))
 
-    def sample(self, ctx) -> int:
-        return random.choice(self._indices)
-
-    def filter(self, candidates: List[int], ctx) -> List[int]:
-        valid = set(self._indices)
-        return [c for c in candidates if c in valid]
-
-    def neighbor(self, value: int, ctx) -> int:
-        delta = random.choice([-1, 1])
-        new_idx = max(0, min(len(self._indices) - 1, value + delta))
-        return new_idx
+    def neighbor(self, value: int, ctx: Context) -> int:
+        return super().neighbor(value, ctx)
 
     def decode(self, index: int) -> SoilProfile:
         """Return :class:`SoilProfile` for *index*."""
@@ -1074,7 +1046,7 @@ _SEISMIC_ZONES: List[SeismicZone] = [
 
 
 @register_variable("seismic_tbdy")
-class SeismicZoneTBDY(Variable):
+class SeismicZoneTBDY(CatalogueVariable):
     """
     Variable whose domain is a set of TBDY 2018 seismic hazard zones.
 
@@ -1114,14 +1086,7 @@ class SeismicZoneTBDY(Variable):
         self._zones = filtered
         self._indices = list(range(len(filtered)))
 
-    def sample(self, ctx) -> int:
-        return random.choice(self._indices)
-
-    def filter(self, candidates: List[int], ctx) -> List[int]:
-        valid = set(self._indices)
-        return [c for c in candidates if c in valid]
-
-    def neighbor(self, value: int, ctx) -> int:
+    def neighbor(self, value: int, ctx: Context) -> int:
         """Step to an adjacent zone (ordered by increasing SDS)."""
         ordered = sorted(self._indices, key=lambda i: self._zones[i].SDS)
         pos = ordered.index(value) if value in ordered else 0

@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import json
 import math
-import random
+import random  # nosec: B311 (non-cryptographic use)
 import tempfile
 import time
 from abc import ABC
@@ -234,7 +234,12 @@ class HarmonySearchOptimizer(ABC):
             Defaults to ``self._memory.harmonies``.
         """
         ctx: Harmony = {"__bw__": bw}
-        source = harmonies if harmonies is not None else (self._memory.harmonies if self._memory else [])
+        if harmonies is not None:
+            source = harmonies
+        elif self._memory:
+            source = self._memory.harmonies
+        else:
+            source = []
 
         for name, var in self.space.items():
             if random.random() < hmcr and source:
@@ -481,48 +486,43 @@ class HarmonySearchOptimizer(ABC):
         *,
         it: int,
         start_iter: int,
-        max_iter: int,
-        bw_max: float,
-        bw_min: float,
-        hmcr: float,
-        par: float,
+        params: Dict[str, Any],
         effective_obj: Callable,
         logger: RunLogger,
         history: List[Tuple[Fitness, Penalty]],
-        verbose: bool,
-        callback: Optional[Callable],
         ckpt: Optional[Path],
-        checkpoint_every: int,
         t0: float,
     ) -> None:
         """Single step of the improvisation loop."""
-        bw = self._compute_bw(it - start_iter, max_iter - start_iter, bw_max, bw_min)
-        new_h = self._improvise(hmcr, par, bw)
+        bw = self._compute_bw(it - start_iter, params["max_iter"] - start_iter, params["bw_max"], params["bw_min"])
+        new_h = self._improvise(params["hmcr"], params["par"], bw)
         new_f, new_p = effective_obj(new_h)
         new_f, new_p = float(new_f), float(new_p)
-        self._memory.try_replace_worst(new_h, new_f, new_p)
+        self._memory.try_replace_worst(new_h, new_f, new_p)  # type: ignore[union-attr]
 
-        best_h, best_f, best_p = self._memory.best()
+        best_h, best_f, best_p = self._memory.best()  # type: ignore[union-attr]
         history.append((best_f, best_p))
-        logger.log_evaluation(it + 1, new_h, new_f, new_p)
-        logger.log_iteration(it + 1, best_h, best_f, best_p)
 
-        if verbose:
-            print(f"[HS] iter {it + 1:>6d} | fitness = {best_f:.6g} | penalty = {best_p:.4g}")
+        it_plus_1 = it + 1
+        logger.log_evaluation(it_plus_1, new_h, new_f, new_p)
+        logger.log_iteration(it_plus_1, best_h, best_f, best_p)
 
-        if callback is not None:
+        if params["verbose"]:
+            print(f"[HS] iter {it_plus_1:>6d} | fitness = {best_f:.6g} | penalty = {best_p:.4g}")
+
+        if params["callback"] is not None:
             partial = OptimizationResult(
                 best_harmony=best_h,
                 best_fitness=best_f,
                 best_penalty=best_p,
-                iterations=it + 1,
+                iterations=it_plus_1,
                 elapsed_seconds=time.perf_counter() - t0,
                 history=history,
             )
-            callback(it + 1, partial)
+            params["callback"](it_plus_1, partial)
 
-        if ckpt and (it + 1) % checkpoint_every == 0:
-            self.save_checkpoint(ckpt, it + 1)
+        if ckpt and it_plus_1 % params["checkpoint_every"] == 0:
+            self.save_checkpoint(ckpt, it_plus_1)
 
     # --- checkpoint --------------------------------------------------------
 
@@ -651,18 +651,11 @@ class Minimization(HarmonySearchOptimizer):
                 self._perform_iteration(
                     it=it,
                     start_iter=start_iter,
-                    max_iter=max_iter,
-                    bw_max=params["bw_max"],
-                    bw_min=params["bw_min"],
-                    hmcr=params["hmcr"],
-                    par=params["par"],
+                    params=params,
                     effective_obj=effective_obj,
                     logger=logger,
                     history=history,
-                    verbose=params["verbose"],
-                    callback=params["callback"],
                     ckpt=ckpt,
-                    checkpoint_every=params["checkpoint_every"],
                     t0=t0,
                 )
         except StopIteration:

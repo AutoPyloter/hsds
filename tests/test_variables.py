@@ -278,7 +278,6 @@ class TestContinuousValidation:
         """Callable bounds skip init validation — no error."""
         v = Continuous(lo=lambda ctx: 999.0, hi=1.0)
         assert isinstance(v, Continuous)
-        assert v is not None
 
     def test_lo_gt_hi_error_contains_values(self):
         with pytest.raises(ValueError) as exc:

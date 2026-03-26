@@ -67,7 +67,7 @@ def _x3_min(ctx: Dict[str, float]) -> float:
 
 
 def check_geotech_stability(x1, x2, x3, x4, x5) -> bool:
-    l_heel, fs_ov, fs_sl, e = compute_geotech(x1, x2, x3, x4, x5)
+    _, fs_ov, fs_sl, e = compute_geotech(x1, x2, x3, x4, x5)
     return fs_ov >= 2.5 and fs_sl >= 2.5 and abs(e) <= (x1 / 6000.0)
 
 
@@ -142,7 +142,7 @@ def objective(config: Dict[str, Any]) -> Tuple[float, float]:
     l_heel, _, _, _ = compute_geotech(x1, x2, x3, x4, x5)
 
     # --- Structural ACI Demands ---
-    (vu_stem, mu_stem, d_stem), (vu_heel, mu_heel, d_base) = compute_aci_demands(x3, x5, l_heel)
+    (_, mu_stem, d_stem), (vu_heel, mu_heel, d_base) = compute_aci_demands(x3, x5, l_heel)
 
     # Embed shear check for heel (dynamically penalized if it fails because x5 wasn't pruned)
     phi_vc_heel = 0.75 * 0.17 * math.sqrt(fc) * WIDTH_B * d_base
