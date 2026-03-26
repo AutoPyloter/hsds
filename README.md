@@ -1,9 +1,9 @@
 # HSDS: Harmony Search in Dependent Space
 
 <p align="left">
-  <a href="https://pypi.org/project/hsds/"><img src="https://img.shields.io/pypi/v/hsds?style=flat-square&color=blue" alt="PyPI Version"></a>
+  <a href="https://pypi.org/project/pyhsds/"><img src="https://img.shields.io/pypi/v/pyhsds?style=flat-square&color=blue" alt="PyPI Version"></a>
   <a href="https://www.python.org"><img src="https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue?style=flat-square" alt="Python Versions"></a>
-  <a href="https://pypi.org/project/hsds/"><img src="https://img.shields.io/pypi/wheel/hsds?style=flat-square&color=blue" alt="PyPI Wheel"></a>
+  <a href="https://pypi.org/project/pyhsds/"><img src="https://img.shields.io/pypi/wheel/pyhsds?style=flat-square&color=blue" alt="PyPI Wheel"></a>
   <br>
 
   <a href="https://github.com/AutoPyloter/hsds/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/AutoPyloter/hsds/ci.yml?branch=main&label=CI&style=flat-square" alt="CI Status"></a>
@@ -14,11 +14,11 @@
   <a href="https://github.com/pre-commit/pre-commit"><img src="https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white&style=flat-square" alt="pre-commit"></a>
   <a href="https://github.com/AutoPyloter/hsds/network/updates"><img src="https://img.shields.io/badge/Dependabot-enabled-blue?logo=dependabot&style=flat-square" alt="Dependabot"></a>
   <a href="https://peps.python.org/pep-0561/"><img src="https://img.shields.io/badge/types-PEP_561-blue.svg?style=flat-square" alt="PEP 561"></a>
-  <a href="https://libraries.io/pypi/hsds"><img src="https://img.shields.io/librariesio/release/pypi/hsds?style=flat-square" alt="Dependencies"></a>
+  <a href="https://libraries.io/pypi/hsds"><img src="https://img.shields.io/librariesio/release/pypi/pyhsds?style=flat-square" alt="Dependencies"></a>
   [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=AutoPyloter_hsds&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=AutoPyloter_hsds)
   <br>
 
-  <a href="https://pepy.tech/project/hsds"><img src="https://static.pepy.tech/badge/hsds/month?style=flat-square" alt="Downloads/Month"></a>
+  <a href="https://pepy.tech/project/pyhsds"><img src="https://static.pepy.tech/badge/pyhsds/month?style=flat-square" alt="Downloads/Month"></a>
   <a href="https://github.com/AutoPyloter/hsds/stargazers"><img src="https://img.shields.io/github/stars/AutoPyloter/hsds?style=social" alt="GitHub Repo stars"></a>
   <a href="https://github.com/AutoPyloter/hsds/commits/main"><img src="https://img.shields.io/github/last-commit/AutoPyloter/hsds?style=flat-square" alt="Last Commit"></a>
   <a href="http://makeapullrequest.com"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square" alt="PRs Welcome"></a>
