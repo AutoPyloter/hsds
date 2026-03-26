@@ -356,12 +356,13 @@ class PowerOfTwo(Variable):
         return [v for v in candidates if v in valid]
 
     def neighbor(self, value: int, ctx: Context) -> int:
-        if value not in self._values:
+        try:
+            idx = self._values.index(value)
+            delta = random.choice([-1, 1])  # NOSONAR
+            new_idx = max(0, min(len(self._values) - 1, idx + delta))
+            return self._values[new_idx]
+        except ValueError:
             return self.sample(ctx)
-        idx = self._values.index(value)
-        delta = random.choice([-1, 1])  # NOSONAR
-        new_idx = max(0, min(len(self._values) - 1, idx + delta))
-        return self._values[new_idx]
 
 
 # ---------------------------------------------------------------------------
@@ -401,9 +402,10 @@ class Fibonacci(Variable):
         return [v for v in candidates if v in valid]
 
     def neighbor(self, value: int, ctx: Context) -> int:
-        if value not in self._values:
+        try:
+            idx = self._values.index(value)
+            delta = random.choice([-1, 1])  # NOSONAR
+            new_idx = max(0, min(len(self._values) - 1, idx + delta))
+            return self._values[new_idx]
+        except ValueError:
             return self.sample(ctx)
-        idx = self._values.index(value)
-        delta = random.choice([-1, 1])  # NOSONAR
-        new_idx = max(0, min(len(self._values) - 1, idx + delta))
-        return self._values[new_idx]

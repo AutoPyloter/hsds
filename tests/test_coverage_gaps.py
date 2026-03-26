@@ -223,4 +223,4 @@ class TestEngineeringGaps:
     def test_soil_spt_legacy_kwargs(self):
         """Ensures legacy kwargs are handled (and thus the block before error is covered)."""
         spt = SoilSPT(N_min=10, N_max=30)
-        assert spt is not None
+        assert isinstance(spt, SoilSPT)
