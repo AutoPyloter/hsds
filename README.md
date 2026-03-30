@@ -17,7 +17,7 @@
   <a href="https://libraries.io/pypi/pyhsds"><img src="https://img.shields.io/librariesio/release/pypi/pyhsds?style=flat-square" alt="Dependencies"></a>
   [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=AutoPyloter_hsds&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=AutoPyloter_hsds)
   <br>
-
+  <a href="https://pepy.tech/project/pyhsds"><img src="https://static.pepy.tech/badge/pyhsds/month?style=flat-square" alt="Downloads/Month"></a>
   <a href="https://github.com/AutoPyloter/hsds/stargazers"><img src="https://img.shields.io/github/stars/AutoPyloter/hsds?style=social" alt="GitHub Repo stars"></a>
   <a href="https://github.com/AutoPyloter/hsds/commits/main"><img src="https://img.shields.io/github/last-commit/AutoPyloter/hsds?style=flat-square" alt="Last Commit"></a>
   <a href="http://makeapullrequest.com"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square" alt="PRs Welcome"></a>

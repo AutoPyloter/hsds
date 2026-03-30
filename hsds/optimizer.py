@@ -16,6 +16,10 @@ Lee, K. S., & Geem, Z. W. (2005).
 Ricart, J., Hüttemann, G., Lima, J., & Barán, B. (2011).
     Multiobjective harmony search algorithm proposals.
     *Electronic Notes in Theoretical Computer Science*, 281, 51–67.
+
+Deb, K. (2000).
+    An efficient constraint handling method for genetic algorithms.
+    *Computer Methods in Applied Mechanics and Engineering*, 186(2–4), 311–338.
 """
 
 from __future__ import annotations
