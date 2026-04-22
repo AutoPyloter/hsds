@@ -5,7 +5,7 @@ pytest-xdist>=3.0
 hypothesis>=6.0
 
 # linting & formatting
-ruff>=0.4
+ruff>=0.15.11
 
 # type checking
 mypy>=1.0
