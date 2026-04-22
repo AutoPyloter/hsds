@@ -1,7 +1,7 @@
 # testing
 pytest>=7.0
 pytest-cov>=5.0
-pytest-xdist>=3.0
+pytest-xdist>=3.8.0
 hypothesis>=6.0
 
 # linting & formatting
