@@ -11,4 +11,4 @@ ruff>=0.4
 mypy>=1.0
 
 # git hooks
-pre-commit>=3.0
+pre-commit>=4.3.0
